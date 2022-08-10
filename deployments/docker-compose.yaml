@@ -1,0 +1,11 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:14.4
+    environment:
+      POSTGRES_PASSWORD: "150869"
+      POSTGRES_USER: "drown"
+      POSTGRES_DB: "userDb"
+    ports:
+      - "5432:5432"
