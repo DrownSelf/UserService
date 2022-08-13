@@ -2,4 +2,3 @@
 go.mod
 go.sum
 internal/pkg/configs/connection.env
-internal/pkg/configs/secret.env

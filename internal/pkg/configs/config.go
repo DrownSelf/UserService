@@ -5,60 +5,37 @@ import (
 	"github.com/spf13/viper"
 )
 
-type SecretConfig struct {
-	SECRET string
+type Config struct {
+	Host        string `mapstructure:"PG_HOST"`
+	PostgrePort string `mapstructure:"PG_PORT"`
+	User        string `mapstructure:"PG_USER"`
+	Password    string `mapstructure:"PG_PASSWORD"`
+	Dbname      string `mapstructure:"PG_DB"`
+	Sslmode     string `mapstructure:"PG_SSLMODE"`
+	ServerPort  string `mapstructure:"SERVERPORT"`
+	Secret      string `mapstructure:"SECRET"`
 }
 
-type ConnectionConfig struct {
-	HOST     string
-	PORT     string
-	USER     string
-	PASSWORD string
-	DBNAME   string
-	SSLMODE  string
-}
-
-func makeConnectionString(config ConnectionConfig) string {
+func MakeConnectionString(config Config) string {
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		config.HOST, config.PORT, config.USER, config.PASSWORD, config.DBNAME, config.SSLMODE)
+		config.Host, config.PostgrePort, config.User, config.Password, config.Dbname, config.Sslmode)
 }
 
-func LoadConnectionConfig() (string, error) {
-	var config ConnectionConfig
-	viper.AddConfigPath("internal/pkg/configs/")
+func LoadConnectionConfig() (*Config, error) {
+	var config Config
+	viper.AddConfigPath("./internal/pkg/configs/")
 	viper.SetConfigName("connection")
 	viper.SetConfigType("env")
-
 	viper.AutomaticEnv()
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	err = viper.Unmarshal(&config)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return makeConnectionString(config), err
-}
-
-func LoadSecretConfig() (string, error) {
-	var secret SecretConfig
-	viper.AddConfigPath("internal/pkg/configs/")
-	viper.SetConfigName("secret")
-	viper.SetConfigType("env")
-
-	viper.AutomaticEnv()
-
-	err := viper.ReadInConfig()
-	if err != nil {
-		return "", err
-	}
-
-	err = viper.Unmarshal(&secret)
-	if err != nil {
-		return "", err
-	}
-	return secret.SECRET, err
+	return &config, err
 }

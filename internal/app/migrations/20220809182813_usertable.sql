@@ -6,6 +6,9 @@ create table users(
     "phoneNumber" text,
     "email" text,
     "password" text,
+    "rating" integer,
+    "created_at" date,
+    "updated_at" date,
 unique("phoneNumber", "email"));
 -- +goose StatementEnd
 

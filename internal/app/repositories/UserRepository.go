@@ -1,12 +1,12 @@
 package repositories
 
 import (
+	"InnoTaxi/internal/pkg/configs"
 	"InnoTaxi/internal/pkg/model"
 	"context"
 	"database/sql"
-	"fmt"
+	"errors"
 	_ "github.com/lib/pq"
-	"log"
 )
 
 type IUserRepository interface {
@@ -19,12 +19,22 @@ type IUserRepository interface {
 }
 
 type UserRepository struct {
-	DB *sql.DB
+	db *sql.DB
 }
 
-func (repository *UserRepository) AddUser(ctx context.Context, user *model.User) (int, error) {
+func NewUserRepository(config *configs.Config) (*UserRepository, error) {
+	connectionString := configs.MakeConnectionString(*config)
+	db, err := sql.Open("postgres", connectionString)
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserRepository{db: db}, nil
+}
+
+func (r *UserRepository) AddUser(ctx context.Context, user *model.User) (int, error) {
 	var id int
-	db := repository.DB
+	db := r.db
 
 	query := `insert into users ("name", "phoneNumber", "email", "password") values($1, $2, $3, $4) RETURNING id`
 	err := db.QueryRowContext(ctx, query,
@@ -35,8 +45,8 @@ func (repository *UserRepository) AddUser(ctx context.Context, user *model.User)
 	return id, err
 }
 
-func (repository *UserRepository) ChangeUser(ctx context.Context, user *model.User) error {
-	db := repository.DB
+func (r *UserRepository) ChangeUser(ctx context.Context, user *model.User) error {
+	db := r.db
 	query := `update users set("name" = $1, "phoneNumber" = $2, "email" = $3, "password" = $4) where "id" = $5`
 
 	row := db.QueryRowContext(ctx, query, user.Name, user.PhoneNumber, user.Email,
@@ -48,8 +58,8 @@ func (repository *UserRepository) ChangeUser(ctx context.Context, user *model.Us
 	return nil
 }
 
-func (repository *UserRepository) GetUserById(ctx context.Context, id int) (*model.User, error) {
-	db := repository.DB
+func (r *UserRepository) GetUserById(ctx context.Context, id int) (*model.User, error) {
+	db := r.db
 	var user model.User
 
 	query := `select * from users where "id" = $1`
@@ -58,18 +68,16 @@ func (repository *UserRepository) GetUserById(ctx context.Context, id int) (*mod
 
 	switch err {
 	case sql.ErrNoRows:
-		fmt.Println("There isn't value which you found.")
 		return nil, nil
 	case nil:
 		return &user, nil
 	default:
-		log.Fatalf("unable to read row. %v", err)
+		return nil, errors.New("unable to read data")
 	}
-	return nil, err
 }
 
-func (repository *UserRepository) DoesNumberExists(ctx context.Context, phone string) (*model.User, error) {
-	db := repository.DB
+func (r *UserRepository) DoesNumberExists(ctx context.Context, phone string) (*model.User, error) {
+	db := r.db
 	var user model.User
 
 	query := `select * from users where "phoneNumber" = $1`
@@ -81,8 +89,8 @@ func (repository *UserRepository) DoesNumberExists(ctx context.Context, phone st
 	return &user, err
 }
 
-func (repository *UserRepository) GetAllUsers(ctx context.Context) ([]model.User, error) {
-	db := repository.DB
+func (r *UserRepository) GetAllUsers(ctx context.Context) ([]model.User, error) {
+	db := r.db
 	var users []model.User
 	rows, err := db.QueryContext(ctx, `select * from users`)
 
@@ -104,19 +112,12 @@ func (repository *UserRepository) GetAllUsers(ctx context.Context) ([]model.User
 	return users, err
 }
 
-func (repository *UserRepository) DeleteUser(context context.Context, id int) error {
-	db := repository.DB
-	res, err := db.Exec(`delete from users where "id" = $1`, id)
+func (r *UserRepository) DeleteUser(context context.Context, id int) error {
+	db := r.db
+	_, err := db.Exec(`delete from users where "id" = $1`, id)
 
 	if err != nil {
 		return err
 	}
-	rowsAffected, err := res.RowsAffected()
-
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("affectedrows: $1", rowsAffected)
 	return nil
 }

@@ -9,3 +9,20 @@ services:
       POSTGRES_DB: "userDb"
     ports:
       - "5432:5432"
+  mongo:
+    image: mongo:5.0
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=drown
+      - MONGO_INITDB_ROOT_PASSWORD=150869
+    ports:
+      - "27017:27017"
+  webinnotaxi:
+    container_name: webinnotaxi
+    restart: on-failure
+    build:
+      dockerfile: ./deployments/Dockerfile
+      context: ../
+    env_file:
+      - ../internal/pkg/configs/connection.env
+    ports:
+      - "8080:8080"

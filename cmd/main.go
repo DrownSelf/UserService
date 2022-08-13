@@ -1,12 +1,11 @@
 package main
 
 import (
-	auth2 "InnoTaxi/internal/app/auth"
+	"InnoTaxi/internal/app/auth"
 	"InnoTaxi/internal/app/handlers"
 	"InnoTaxi/internal/app/repositories"
 	"InnoTaxi/internal/app/services"
 	"InnoTaxi/internal/pkg/configs"
-	"database/sql"
 	"github.com/gin-contrib/cors"
 	"log"
 
@@ -16,29 +15,23 @@ import (
 )
 
 func main() {
-	connectionString, err := configs.LoadConnectionConfig()
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
-
-	db, err := sql.Open("postgres", connectionString)
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
-
-	secret, err := configs.LoadSecretConfig()
+	config, err := configs.LoadConnectionConfig()
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
 
 	router := gin.Default()
-	var repo repositories.IUserRepository = &repositories.UserRepository{db}
-	var service services.IUserService = services.New(repo, auth2.NewJwt(secret), &auth2.Hasher{}, validator.New())
+	repo, err := repositories.NewUserRepository(config)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
 
-	handler := handlers.New(service)
+	var service services.IUserService = services.New(repo, auth.NewJwt(config.Secret), &auth.Hasher{})
+
+	handler := handlers.New(service, validator.New())
 	handler.InitRoutes(router)
 	router.Use(cors.Default())
-	err = router.Run(":8080")
+	err = router.Run(":" + config.ServerPort)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}

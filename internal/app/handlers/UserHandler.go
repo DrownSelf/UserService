@@ -5,53 +5,71 @@ import (
 	"InnoTaxi/internal/pkg/DTO"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	_ "github.com/spf13/viper"
 	"net/http"
 )
 
 type Handler struct {
-	service services.IUserService
+	service   services.IUserService
+	validator *validator.Validate
 }
 
-func New(service services.IUserService) Handler {
-	return Handler{service: service}
+func New(service services.IUserService, validator *validator.Validate) Handler {
+	return Handler{service: service, validator: validator}
 }
 
-func (handler *Handler) Register(ctx *gin.Context) {
-	var userRequest DTO.CreateUserRequest
-	if err := ctx.Bind(&userRequest); err != nil {
+func (h *Handler) Register(ctx *gin.Context) {
+	var user DTO.CreateUserRequest
+	if err := ctx.Bind(&user); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		ctx.Abort()
 		return
 	}
-	id, err := handler.service.RegisterUser(ctx, userRequest)
+
+	err := h.validator.Struct(user)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		ctx.Abort()
 		return
 	}
-	ctx.JSON(http.StatusCreated, gin.H{"id": id, "name": userRequest.Name, "phoneNumber": userRequest.PhoneNumber})
+
+	id, err := h.service.RegisterUser(ctx, user)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.Abort()
+		return
+	}
+	ctx.JSON(http.StatusCreated, gin.H{"id": id, "name": user.Name, "phoneNumber": user.PhoneNumber})
 }
 
-func (handler *Handler) LogIn(ctx *gin.Context) {
-	var userRequest DTO.LogInUserRequest
-	if err := ctx.BindJSON(&userRequest); err != nil {
+func (h *Handler) LogIn(ctx *gin.Context) {
+	var user DTO.LogInUserRequest
+	if err := ctx.BindJSON(&user); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error:": err.Error()})
 		ctx.Abort()
 		return
 	}
 
-	response, err := handler.service.LogInUser(ctx, userRequest)
+	err := h.validator.Struct(user)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.Abort()
+		return
+	}
+
+	response, err := h.service.LogInUser(ctx, user)
 	if err != nil {
 		fmt.Println(err.Error())
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		ctx.Abort()
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"id": response.Id, "token": response.Token})
 }
 
-func (handler *Handler) InitRoutes(router *gin.Engine) {
-	router.POST("/user", handler.Register)
-	router.GET("/user", handler.LogIn)
+func (h *Handler) InitRoutes(router *gin.Engine) {
+
+	router.POST("/user", h.Register)
+	router.GET("/user", h.LogIn)
 }
