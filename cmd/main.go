@@ -6,7 +6,7 @@ import (
 	"InnoTaxi/internal/app/repositories"
 	"InnoTaxi/internal/app/services"
 	"InnoTaxi/internal/pkg/configs"
-	"github.com/gin-contrib/cors"
+	"context"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -17,20 +17,24 @@ import (
 func main() {
 	config, err := configs.LoadConnectionConfig()
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Fatalf("error during reading config: %v", err)
 	}
 
-	router := gin.Default()
-	repo, err := repositories.NewUserRepository(config)
+	userRepo, err := repositories.NewUserRepository(config)
+	defer userRepo.DestroyRepository()
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Fatalf("error during connect DB: %v", err)
 	}
 
-	var service services.IUserService = services.New(repo, auth.NewJwt(config.Secret), &auth.Hasher{})
+	logRepo, err := repositories.NewLogRepo(context.Background(), config)
+	if err != nil {
+		log.Fatalf("error during connect DB: %v", err)
+	}
+	router := gin.New()
 
+	var service services.IUserService = services.New(userRepo, auth.NewJwt(config.Secret), &auth.Hasher{})
 	handler := handlers.New(service, validator.New())
-	handler.InitRoutes(router)
-	router.Use(cors.Default())
+	handler.InitRoutes(router, logRepo)
 	err = router.Run(":" + config.ServerPort)
 	if err != nil {
 		log.Fatalf("%v", err)

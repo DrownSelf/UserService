@@ -5,8 +5,11 @@ import (
 	"InnoTaxi/internal/pkg/model"
 	"context"
 	"database/sql"
-	"errors"
+	"time"
+
+	_ "InnoTaxi/internal/app/migrations"
 	_ "github.com/lib/pq"
+	"github.com/pressly/goose/v3"
 )
 
 type IUserRepository interface {
@@ -23,22 +26,43 @@ type UserRepository struct {
 }
 
 func NewUserRepository(config *configs.Config) (*UserRepository, error) {
-	connectionString := configs.MakeConnectionString(*config)
-	db, err := sql.Open("postgres", connectionString)
+	db, err := sql.Open("postgres", config.PgSource)
 	if err != nil {
+		return nil, err
+	}
+
+	goose.SetDialect("postgres")
+	if config.Reset {
+		if err = goose.Down(db, "."); err != nil {
+			return nil, err
+		}
+	}
+
+	if err = goose.Up(db, "."); err != nil {
+		db.Close()
 		return nil, err
 	}
 
 	return &UserRepository{db: db}, nil
 }
 
+func (r *UserRepository) DestroyRepository() error {
+	err := goose.Down(r.db, ".")
+	err = r.db.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *UserRepository) AddUser(ctx context.Context, user *model.User) (int, error) {
 	var id int
 	db := r.db
-
-	query := `insert into users ("name", "phoneNumber", "email", "password") values($1, $2, $3, $4) RETURNING id`
+	createdTime := time.Now().UTC()
+	query := `insert into users ("name", "phoneNumber", "email", "password", "created_at") values($1, $2, $3, $4, $5) RETURNING id`
 	err := db.QueryRowContext(ctx, query,
-		user.Name, user.PhoneNumber, user.Email, user.Password).Scan(&id)
+		user.Name, user.PhoneNumber, user.Email, user.Password, createdTime).Scan(&id)
+
 	if err != nil {
 		return -1, err
 	}
@@ -46,14 +70,15 @@ func (r *UserRepository) AddUser(ctx context.Context, user *model.User) (int, er
 }
 
 func (r *UserRepository) ChangeUser(ctx context.Context, user *model.User) error {
+	var id int
 	db := r.db
-	query := `update users set("name" = $1, "phoneNumber" = $2, "email" = $3, "password" = $4) where "id" = $5`
+	updateTime := time.Now().UTC()
+	query := `update users set("name" = $1, "phoneNumber" = $2, "email" = $3, "password" = $4, "updated_at" = $5) where "id" = $5`
 
-	row := db.QueryRowContext(ctx, query, user.Name, user.PhoneNumber, user.Email,
-		user.Password, user.Id)
-
-	if row.Err() != nil {
-		return row.Err()
+	err := db.QueryRowContext(ctx, query, user.Name, user.PhoneNumber, user.Email,
+		user.Password, user.Id, updateTime).Scan(&id)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -72,7 +97,7 @@ func (r *UserRepository) GetUserById(ctx context.Context, id int) (*model.User, 
 	case nil:
 		return &user, nil
 	default:
-		return nil, errors.New("unable to read data")
+		return nil, err
 	}
 }
 
@@ -82,11 +107,15 @@ func (r *UserRepository) DoesNumberExists(ctx context.Context, phone string) (*m
 
 	query := `select * from users where "phoneNumber" = $1`
 	row := db.QueryRowContext(ctx, query, phone)
-	err := row.Scan(&user.Id, &user.Name, &user.PhoneNumber, &user.Email, &user.Password)
-	if err != nil {
+	err := row.Scan(&user.Id, &user.Name, &user.PhoneNumber, &user.Email, &user.Password, &user.Rating, &user.CreatedAt, &user.UpdatedAt)
+	switch err {
+	case sql.ErrNoRows:
+		return nil, nil
+	case nil:
+		return &user, nil
+	default:
 		return nil, err
 	}
-	return &user, err
 }
 
 func (r *UserRepository) GetAllUsers(ctx context.Context) ([]model.User, error) {

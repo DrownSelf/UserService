@@ -2,11 +2,11 @@ package services
 
 import (
 	"InnoTaxi/internal/app/auth"
+	"InnoTaxi/internal/app/errors"
 	"InnoTaxi/internal/app/repositories"
 	"InnoTaxi/internal/pkg/DTO"
 	"InnoTaxi/internal/pkg/model"
 	"context"
-	"fmt"
 )
 
 type IUserService interface {
@@ -33,9 +33,12 @@ func (s *UserService) RegisterUser(ctx context.Context, request DTO.CreateUserRe
 		return -1, err
 	}
 
-	check, err := repository.DoesNumberExists(ctx, request.PhoneNumber)
-	if check == nil {
+	user, err := repository.DoesNumberExists(ctx, request.PhoneNumber)
+	if err != nil {
 		return -1, err
+	}
+	if user != nil {
+		return -1, errors.ErrUserExists
 	}
 
 	var newUser model.User = model.User{
@@ -46,12 +49,11 @@ func (s *UserService) RegisterUser(ctx context.Context, request DTO.CreateUserRe
 	}
 
 	id, err := repository.AddUser(ctx, &newUser)
-
 	if err != nil {
 		return -1, err
 	}
 
-	return id, err
+	return id, nil
 }
 
 func (s *UserService) LogInUser(ctx context.Context, request DTO.LogInUserRequest) (*DTO.GetUserResponse, error) {
@@ -61,6 +63,9 @@ func (s *UserService) LogInUser(ctx context.Context, request DTO.LogInUserReques
 	if err != nil {
 		return nil, err
 	}
+	if user == nil {
+		return nil, errors.ErrUserDoesntExist
+	}
 
 	err = s.hasher.CheckPassword(user.Password, request.Password)
 	if err != nil {
@@ -69,7 +74,6 @@ func (s *UserService) LogInUser(ctx context.Context, request DTO.LogInUserReques
 
 	token, err := s.tokenForger.Encode(user.Name, user.Email)
 	if err != nil {
-		fmt.Println("omg")
 		return nil, err
 	}
 

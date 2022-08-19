@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"errors"
+	"InnoTaxi/internal/app/errors"
 	"github.com/golang-jwt/jwt/v4"
 	"time"
 )
@@ -43,25 +43,17 @@ func (forger *JWTForger) Encode(name string, email string) (string, error) {
 }
 
 func (forger *JWTForger) Decode(cipher string) error {
-	token, err := jwt.ParseWithClaims(
-		cipher,
-		&JWTClaim{},
+	_, err := jwt.Parse(cipher,
 		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errors.ErrInvalidToken
+			}
 			return []byte(forger.secret), nil
 		})
+
 	if err != nil {
-		return err
+		return errors.ErrInvalidToken
 	}
 
-	claims, ok := token.Claims.(*JWTClaim)
-	if !ok {
-		err = errors.New("couldn't parse claims")
-		return err
-	}
-
-	if claims.ExpiresAt < time.Now().Local().Unix() {
-		err = errors.New("token expired")
-		return err
-	}
 	return nil
 }

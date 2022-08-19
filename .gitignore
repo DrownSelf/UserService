@@ -2,3 +2,4 @@
 go.mod
 go.sum
 internal/pkg/configs/connection.env
+deployments/init-mongo.js

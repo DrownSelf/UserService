@@ -1,41 +1,34 @@
 package configs
 
 import (
-	"fmt"
-	"github.com/spf13/viper"
+	"github.com/joho/godotenv"
+	"os"
 )
 
 type Config struct {
-	Host        string `mapstructure:"PG_HOST"`
-	PostgrePort string `mapstructure:"PG_PORT"`
-	User        string `mapstructure:"PG_USER"`
-	Password    string `mapstructure:"PG_PASSWORD"`
-	Dbname      string `mapstructure:"PG_DB"`
-	Sslmode     string `mapstructure:"PG_SSLMODE"`
-	ServerPort  string `mapstructure:"SERVERPORT"`
-	Secret      string `mapstructure:"SECRET"`
-}
-
-func MakeConnectionString(config Config) string {
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		config.Host, config.PostgrePort, config.User, config.Password, config.Dbname, config.Sslmode)
+	PgSource         string
+	MongoDbConnSting string
+	ServerPort       string
+	Secret           string
+	Reset            bool
 }
 
 func LoadConnectionConfig() (*Config, error) {
 	var config Config
-	viper.AddConfigPath("./internal/pkg/configs/")
-	viper.SetConfigName("connection")
-	viper.SetConfigType("env")
-	viper.AutomaticEnv()
-
-	err := viper.ReadInConfig()
+	err := godotenv.Load("./internal/pkg/configs/connection.env")
 	if err != nil {
 		return nil, err
 	}
+	config.PgSource = os.Getenv("PG_SOURCE")
+	config.MongoDbConnSting = os.Getenv("MONGODB_CONNSTRING")
+	config.ServerPort = os.Getenv("SERVERPORT")
+	config.Secret = os.Getenv("SECRET")
+	reset := os.Getenv("RESET")
 
-	err = viper.Unmarshal(&config)
-	if err != nil {
-		return nil, err
+	if reset != "true" {
+		config.Reset = false
+	} else {
+		config.Reset = true
 	}
 	return &config, err
 }

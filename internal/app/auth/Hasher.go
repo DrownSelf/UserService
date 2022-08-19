@@ -1,6 +1,9 @@
 package auth
 
-import "golang.org/x/crypto/bcrypt"
+import (
+	"InnoTaxi/internal/app/errors"
+	"golang.org/x/crypto/bcrypt"
+)
 
 type IHasher interface {
 	HashPassword(password string) (string, error)
@@ -21,7 +24,7 @@ func (hasher *Hasher) HashPassword(password string) (string, error) {
 func (hasher *Hasher) CheckPassword(userPassword string, providedPassword string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(userPassword), []byte(providedPassword))
 	if err != nil {
-		return err
+		return errors.ErrWrongPassword
 	}
 	return nil
 }
