@@ -32,11 +32,6 @@ func NewUserRepository(config *configs.Config) (*UserRepository, error) {
 	}
 
 	goose.SetDialect("postgres")
-	if config.Reset {
-		if err = goose.Down(db, "."); err != nil {
-			return nil, err
-		}
-	}
 
 	if err = goose.Up(db, "."); err != nil {
 		db.Close()

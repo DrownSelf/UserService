@@ -3,6 +3,7 @@ package configs
 import (
 	"github.com/joho/godotenv"
 	"os"
+	"time"
 )
 
 type Config struct {
@@ -10,7 +11,7 @@ type Config struct {
 	MongoDbConnSting string
 	ServerPort       string
 	Secret           string
-	Reset            bool
+	ExpTime          time.Duration
 }
 
 func LoadConnectionConfig() (*Config, error) {
@@ -19,16 +20,15 @@ func LoadConnectionConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	
 	config.PgSource = os.Getenv("PG_SOURCE")
 	config.MongoDbConnSting = os.Getenv("MONGODB_CONNSTRING")
 	config.ServerPort = os.Getenv("SERVERPORT")
 	config.Secret = os.Getenv("SECRET")
-	reset := os.Getenv("RESET")
-
-	if reset != "true" {
-		config.Reset = false
-	} else {
-		config.Reset = true
+	config.ExpTime, err = time.ParseDuration(os.Getenv("EXPTIME"))
+	if err != nil {
+		return nil, err
 	}
+
 	return &config, err
 }

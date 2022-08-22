@@ -18,7 +18,6 @@ var (
 	ErrMethodNotAllowed = errors.New("Method not allowed")
 	ErrUserDoesntExist  = errors.New("User doensn't exists")
 	ErrWrongPassword    = errors.New("Wrong password")
-	ErrInternalServer   = errors.New("Internal server error")
 	ErrInvalidData      = errors.New("Invalid data input")
 )
 
@@ -37,14 +36,12 @@ func HandleErr(ctx *gin.Context) {
 			res = Res{ErrWrongPassword.Error(), http.StatusBadRequest}
 		case ErrUserDoesntExist:
 			res = Res{ErrUserDoesntExist.Error(), http.StatusBadRequest}
-		case ErrInternalServer:
-			res = Res{ErrInternalServer.Error(), http.StatusInternalServerError}
 		case ErrInvalidData:
 			res = Res{ErrInvalidData.Error(), http.StatusBadRequest}
 		default:
-			log.Println("i dont care")
-			res = Res{ErrInternalServer.Error(), http.StatusInternalServerError}
+			res = Res{"", http.StatusInternalServerError}
 		}
+		log.Printf("Registred error: %d|%s", res.Code, res.Message)
 		ctx.AbortWithStatusJSON(res.Code, res.Message)
 	}
 }

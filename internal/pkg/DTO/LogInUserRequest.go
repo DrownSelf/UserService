@@ -1,6 +1,6 @@
 package DTO
 
 type LogInUserRequest struct {
-	PhoneNumber string `json:"phoneNumber" validate:"required,e164"`
-	Password    string `json:"password" validate:"required,min=6,max=15"`
+	PhoneNumber string `json:"phoneNumber" binding:"required,e164"`
+	Password    string `json:"password" binding:"required,min=6,max=15"`
 }

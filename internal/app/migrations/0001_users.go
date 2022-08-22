@@ -1,7 +1,6 @@
 package migrations
 
 import (
-	"InnoTaxi/internal/app/errors"
 	"database/sql"
 	"github.com/pressly/goose/v3"
 )
@@ -23,7 +22,7 @@ func up(tx *sql.Tx) error {
 	unique("phoneNumber", "email"));`
 	_, err := tx.Exec(query)
 	if err != nil {
-		return errors.ErrInternalServer
+		return err
 	}
 
 	return nil
@@ -33,7 +32,7 @@ func down(tx *sql.Tx) error {
 	query := `drop table users;`
 	_, err := tx.Exec(query)
 	if err != nil {
-		return errors.ErrInternalServer
+		return err
 	}
 	return nil
 }

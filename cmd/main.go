@@ -7,11 +7,14 @@ import (
 	"InnoTaxi/internal/app/services"
 	"InnoTaxi/internal/pkg/configs"
 	"context"
-	"log"
-
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	_ "github.com/lib/pq"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
@@ -21,7 +24,6 @@ func main() {
 	}
 
 	userRepo, err := repositories.NewUserRepository(config)
-	defer userRepo.DestroyRepository()
 	if err != nil {
 		log.Fatalf("error during connect DB: %v", err)
 	}
@@ -32,11 +34,43 @@ func main() {
 	}
 	router := gin.New()
 
-	var service services.IUserService = services.New(userRepo, auth.NewJwt(config.Secret), &auth.Hasher{})
-	handler := handlers.New(service, validator.New())
+	service := services.NewUserService(userRepo, auth.NewJwt(config.Secret), &auth.Hasher{}, config)
+	handler := handlers.New(service)
 	handler.InitRoutes(router, logRepo)
-	err = router.Run(":" + config.ServerPort)
-	if err != nil {
-		log.Fatalf("%v", err)
+
+	srv := &http.Server{
+		Addr:    ":" + config.ServerPort,
+		Handler: router,
 	}
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("error during creating server: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutdown server")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err = userRepo.DestroyRepository(); err != nil {
+		log.Printf("Error during shutdown db: %s", err)
+	}
+
+	if err = logRepo.DestroyRepo(context.Background()); err != nil {
+		log.Printf("Error during shutdown db: %s", err)
+	}
+
+	if err = srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server Shutdown:", err)
+	}
+
+	select {
+	case <-ctx.Done():
+		log.Println("timeout of 5 sec")
+	}
+	log.Println("Server exiting")
 }

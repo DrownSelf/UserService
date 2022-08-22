@@ -2,12 +2,13 @@ package auth
 
 import (
 	"InnoTaxi/internal/app/errors"
+	"InnoTaxi/internal/pkg/configs"
 	"github.com/golang-jwt/jwt/v4"
 	"time"
 )
 
 type TokenForger interface {
-	Encode(name string, email string) (string, error)
+	Encode(name string, email string, config configs.Config) (string, error)
 	Decode(cipher string) error
 }
 
@@ -25,9 +26,9 @@ func NewJwt(secret string) *JWTForger {
 	return &JWTForger{secret: secret}
 }
 
-func (forger *JWTForger) Encode(name string, email string) (string, error) {
+func (forger *JWTForger) Encode(name string, email string, config configs.Config) (string, error) {
 	secret := []byte(forger.secret)
-	expirationTime := time.Now().Add(1 * time.Hour).Unix()
+	expirationTime := time.Now().Add(config.ExpTime).Unix()
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	claims := token.Claims.(jwt.MapClaims)

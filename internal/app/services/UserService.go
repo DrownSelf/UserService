@@ -5,6 +5,7 @@ import (
 	"InnoTaxi/internal/app/errors"
 	"InnoTaxi/internal/app/repositories"
 	"InnoTaxi/internal/pkg/DTO"
+	"InnoTaxi/internal/pkg/configs"
 	"InnoTaxi/internal/pkg/model"
 	"context"
 )
@@ -18,22 +19,23 @@ type UserService struct {
 	repository  repositories.IUserRepository
 	tokenForger auth.TokenForger
 	hasher      auth.IHasher
+	config      *configs.Config
 }
 
-func New(repository repositories.IUserRepository,
+func NewUserService(repository repositories.IUserRepository,
 	tokenForger auth.TokenForger,
-	hasher auth.IHasher) *UserService {
-	return &UserService{repository: repository, tokenForger: tokenForger, hasher: hasher}
+	hasher auth.IHasher,
+	config *configs.Config) *UserService {
+	return &UserService{repository: repository, tokenForger: tokenForger, hasher: hasher, config: config}
 }
 
 func (s *UserService) RegisterUser(ctx context.Context, request DTO.CreateUserRequest) (int, error) {
-	repository := s.repository
 	hashedPassword, err := s.hasher.HashPassword(request.Password)
 	if err != nil {
 		return -1, err
 	}
 
-	user, err := repository.DoesNumberExists(ctx, request.PhoneNumber)
+	user, err := s.repository.DoesNumberExists(ctx, request.PhoneNumber)
 	if err != nil {
 		return -1, err
 	}
@@ -48,7 +50,7 @@ func (s *UserService) RegisterUser(ctx context.Context, request DTO.CreateUserRe
 		Password:    hashedPassword,
 	}
 
-	id, err := repository.AddUser(ctx, &newUser)
+	id, err := s.repository.AddUser(ctx, &newUser)
 	if err != nil {
 		return -1, err
 	}
@@ -57,9 +59,7 @@ func (s *UserService) RegisterUser(ctx context.Context, request DTO.CreateUserRe
 }
 
 func (s *UserService) LogInUser(ctx context.Context, request DTO.LogInUserRequest) (*DTO.GetUserResponse, error) {
-	repository := s.repository
-
-	user, err := repository.DoesNumberExists(ctx, request.PhoneNumber)
+	user, err := s.repository.DoesNumberExists(ctx, request.PhoneNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (s *UserService) LogInUser(ctx context.Context, request DTO.LogInUserReques
 		return nil, err
 	}
 
-	token, err := s.tokenForger.Encode(user.Name, user.Email)
+	token, err := s.tokenForger.Encode(user.Name, user.Email, *(s.config))
 	if err != nil {
 		return nil, err
 	}

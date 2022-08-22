@@ -8,27 +8,20 @@ import (
 	"InnoTaxi/internal/pkg/DTO"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"net/http"
 )
 
 type Handler struct {
-	service   services.IUserService
-	validator *validator.Validate
+	service services.IUserService
 }
 
-func New(service services.IUserService, validator *validator.Validate) Handler {
-	return Handler{service: service, validator: validator}
+func New(service services.IUserService) Handler {
+	return Handler{service: service}
 }
 
 func (h *Handler) Register(ctx *gin.Context) {
 	var user DTO.CreateUserRequest
-	if err := ctx.Bind(&user); err != nil {
-		ctx.Error(errors.ErrInvalidData)
-		return
-	}
-
-	if err := h.validator.Struct(user); err != nil {
+	if err := ctx.ShouldBindJSON(&user); err != nil {
 		ctx.Error(errors.ErrInvalidData)
 		return
 	}
@@ -43,12 +36,7 @@ func (h *Handler) Register(ctx *gin.Context) {
 
 func (h *Handler) LogIn(ctx *gin.Context) {
 	var user DTO.LogInUserRequest
-	if err := ctx.BindJSON(&user); err != nil {
-		ctx.Error(errors.ErrInvalidData)
-		return
-	}
-
-	if err := h.validator.Struct(user); err != nil {
+	if err := ctx.ShouldBindJSON(&user); err != nil {
 		ctx.Error(errors.ErrInvalidData)
 		return
 	}
