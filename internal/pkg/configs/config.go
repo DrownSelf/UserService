@@ -1,9 +1,10 @@
 package configs
 
 import (
-	"github.com/joho/godotenv"
 	"os"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -20,7 +21,7 @@ func LoadConnectionConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	config.PgSource = os.Getenv("PG_SOURCE")
 	config.MongoDbConnSting = os.Getenv("MONGODB_CONNSTRING")
 	config.ServerPort = os.Getenv("SERVERPORT")

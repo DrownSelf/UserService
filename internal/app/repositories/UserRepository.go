@@ -1,15 +1,17 @@
 package repositories
 
 import (
-	"InnoTaxi/internal/pkg/configs"
-	"InnoTaxi/internal/pkg/model"
 	"context"
 	"database/sql"
 	"time"
 
-	_ "InnoTaxi/internal/app/migrations"
+	"InnoTaxi/internal/pkg/configs"
+	"InnoTaxi/internal/pkg/model"
+
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
+
+	_ "InnoTaxi/internal/app/migrations"
 )
 
 type IUserRepository interface {
@@ -41,13 +43,18 @@ func NewUserRepository(config *configs.Config) (*UserRepository, error) {
 	return &UserRepository{db: db}, nil
 }
 
-func (r *UserRepository) DestroyRepository() error {
-	err := goose.Down(r.db, ".")
-	err = r.db.Close()
-	if err != nil {
+func (r *UserRepository) DestroyRepository(ctx context.Context) error {
+	quit := make(chan error)
+	go func() {
+		quit <- r.db.Close()
+	}()
+
+	select {
+	case err := <-quit:
 		return err
+	case <-ctx.Done():
+		return nil
 	}
-	return nil
 }
 
 func (r *UserRepository) AddUser(ctx context.Context, user *model.User) (int, error) {

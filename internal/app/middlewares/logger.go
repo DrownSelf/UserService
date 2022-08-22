@@ -1,12 +1,14 @@
 package middlewares
 
 import (
-	"InnoTaxi/internal/app/repositories"
-	"InnoTaxi/internal/pkg/model"
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"time"
+
+	"github.com/gin-gonic/gin"
+
+	"InnoTaxi/internal/app/repositories"
+	"InnoTaxi/internal/pkg/model"
 )
 
 func Logger(r *repositories.LogRepo) gin.HandlerFunc {

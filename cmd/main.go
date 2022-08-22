@@ -1,20 +1,22 @@
 package main
 
 import (
-	"InnoTaxi/internal/app/auth"
-	"InnoTaxi/internal/app/handlers"
-	"InnoTaxi/internal/app/repositories"
-	"InnoTaxi/internal/app/services"
-	"InnoTaxi/internal/pkg/configs"
 	"context"
-	"github.com/gin-gonic/gin"
-	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	_ "github.com/lib/pq"
+
+	"InnoTaxi/internal/app/auth"
+	"InnoTaxi/internal/app/handlers"
+	"InnoTaxi/internal/app/repositories"
+	"InnoTaxi/internal/app/services"
+	"InnoTaxi/internal/pkg/configs"
 )
 
 func main() {
@@ -56,11 +58,11 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err = userRepo.DestroyRepository(); err != nil {
+	if err = userRepo.DestroyRepository(ctx); err != nil {
 		log.Printf("Error during shutdown db: %s", err)
 	}
 
-	if err = logRepo.DestroyRepo(context.Background()); err != nil {
+	if err = logRepo.DestroyRepo(ctx); err != nil {
 		log.Printf("Error during shutdown db: %s", err)
 	}
 

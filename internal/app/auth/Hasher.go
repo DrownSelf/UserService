@@ -1,8 +1,9 @@
 package auth
 
 import (
-	"InnoTaxi/internal/app/errors"
 	"golang.org/x/crypto/bcrypt"
+
+	"InnoTaxi/internal/app/errors"
 )
 
 type IHasher interface {

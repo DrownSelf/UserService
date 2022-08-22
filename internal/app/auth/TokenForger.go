@@ -1,10 +1,12 @@
 package auth
 
 import (
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
+
 	"InnoTaxi/internal/app/errors"
 	"InnoTaxi/internal/pkg/configs"
-	"github.com/golang-jwt/jwt/v4"
-	"time"
 )
 
 type TokenForger interface {

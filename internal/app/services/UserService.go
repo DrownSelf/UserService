@@ -1,13 +1,14 @@
 package services
 
 import (
+	"context"
+
 	"InnoTaxi/internal/app/auth"
 	"InnoTaxi/internal/app/errors"
 	"InnoTaxi/internal/app/repositories"
 	"InnoTaxi/internal/pkg/DTO"
 	"InnoTaxi/internal/pkg/configs"
 	"InnoTaxi/internal/pkg/model"
-	"context"
 )
 
 type IUserService interface {

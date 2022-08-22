@@ -1,14 +1,16 @@
 package handlers
 
 import (
+	"net/http"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+
 	"InnoTaxi/internal/app/errors"
 	"InnoTaxi/internal/app/middlewares"
 	"InnoTaxi/internal/app/repositories"
 	"InnoTaxi/internal/app/services"
 	"InnoTaxi/internal/pkg/DTO"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 type Handler struct {

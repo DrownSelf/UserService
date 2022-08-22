@@ -2,9 +2,10 @@ package errors
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Res struct {
