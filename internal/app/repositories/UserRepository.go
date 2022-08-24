@@ -5,20 +5,20 @@ import (
 	"database/sql"
 	"time"
 
+	"InnoTaxi/internal/app/errors"
+	"InnoTaxi/internal/app/migrations"
 	"InnoTaxi/internal/pkg/configs"
 	"InnoTaxi/internal/pkg/model"
 
 	_ "github.com/lib/pq"
-	"github.com/pressly/goose/v3"
-
-	_ "InnoTaxi/internal/app/migrations"
 )
 
 type IUserRepository interface {
-	AddUser(ctx context.Context, user *model.User) (int, error)
-	ChangeUser(ctx context.Context, user *model.User) error
-	GetUserById(ctx context.Context, id int) (*model.User, error)
-	DoesNumberExists(ctx context.Context, phone string) (*model.User, error)
+	AddUser(ctx context.Context, user model.User) (int, error)
+	ChangePassword(ctx context.Context, newPassword string, id int) error
+	GetUserById(ctx context.Context, id int) (model.User, error)
+	GetUserByPhone(ctx context.Context, phone string) (model.User, error)
+	DoesPhoneExists(ctx context.Context, phone string) error
 	GetAllUsers(ctx context.Context) ([]model.User, error)
 	DeleteUser(ctx context.Context, id int) error
 }
@@ -33,10 +33,10 @@ func NewUserRepository(config *configs.Config) (*UserRepository, error) {
 		return nil, err
 	}
 
-	goose.SetDialect("postgres")
-
-	if err = goose.Up(db, "."); err != nil {
-		db.Close()
+	if err = migrations.Up(db); err != nil {
+		if err = db.Close(); err != nil {
+			return nil, err
+		}
 		return nil, err
 	}
 
@@ -57,12 +57,11 @@ func (r *UserRepository) DestroyRepository(ctx context.Context) error {
 	}
 }
 
-func (r *UserRepository) AddUser(ctx context.Context, user *model.User) (int, error) {
+func (r *UserRepository) AddUser(ctx context.Context, user model.User) (int, error) {
 	var id int
-	db := r.db
 	createdTime := time.Now().UTC()
 	query := `insert into users ("name", "phoneNumber", "email", "password", "created_at") values($1, $2, $3, $4, $5) RETURNING id`
-	err := db.QueryRowContext(ctx, query,
+	err := r.db.QueryRowContext(ctx, query,
 		user.Name, user.PhoneNumber, user.Email, user.Password, createdTime).Scan(&id)
 
 	if err != nil {
@@ -71,59 +70,69 @@ func (r *UserRepository) AddUser(ctx context.Context, user *model.User) (int, er
 	return id, err
 }
 
-func (r *UserRepository) ChangeUser(ctx context.Context, user *model.User) error {
-	var id int
-	db := r.db
+func (r *UserRepository) ChangePassword(ctx context.Context, newPassword string, id int) error {
 	updateTime := time.Now().UTC()
-	query := `update users set("name" = $1, "phoneNumber" = $2, "email" = $3, "password" = $4, "updated_at" = $5) where "id" = $5`
+	query := `update users set "password"=$1, "updated_at"=$2 where "id" = $3`
 
-	err := db.QueryRowContext(ctx, query, user.Name, user.PhoneNumber, user.Email,
-		user.Password, user.Id, updateTime).Scan(&id)
+	err := r.db.QueryRowContext(ctx, query, newPassword, updateTime, id).Err()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *UserRepository) GetUserById(ctx context.Context, id int) (*model.User, error) {
-	db := r.db
+func (r *UserRepository) GetUserById(ctx context.Context, id int) (model.User, error) {
 	var user model.User
 
 	query := `select * from users where "id" = $1`
-	row := db.QueryRowContext(ctx, query, id)
+	row := r.db.QueryRowContext(ctx, query, id)
 	err := row.Scan(&user.Id, &user.Name, &user.PhoneNumber, &user.Email, &user.Password)
 
 	switch err {
 	case sql.ErrNoRows:
-		return nil, nil
+		return user, errors.ErrUserDoesntExist
 	case nil:
-		return &user, nil
+		return user, nil
 	default:
-		return nil, err
+		return user, err
 	}
 }
 
-func (r *UserRepository) DoesNumberExists(ctx context.Context, phone string) (*model.User, error) {
-	db := r.db
+func (r *UserRepository) DoesPhoneExists(ctx context.Context, phone string) error {
 	var user model.User
 
 	query := `select * from users where "phoneNumber" = $1`
-	row := db.QueryRowContext(ctx, query, phone)
+	row := r.db.QueryRowContext(ctx, query, phone)
 	err := row.Scan(&user.Id, &user.Name, &user.PhoneNumber, &user.Email, &user.Password, &user.Rating, &user.CreatedAt, &user.UpdatedAt)
 	switch err {
 	case sql.ErrNoRows:
-		return nil, nil
+		return nil
 	case nil:
-		return &user, nil
+		return errors.ErrUserExists
 	default:
-		return nil, err
+		return err
+	}
+}
+
+func (r *UserRepository) GetUserByPhone(ctx context.Context, phone string) (model.User, error) {
+	var user model.User
+
+	query := `select * from users where "phoneNumber" = $1`
+	row := r.db.QueryRowContext(ctx, query, phone)
+	err := row.Scan(&user.Id, &user.Name, &user.PhoneNumber, &user.Email, &user.Password, &user.Rating, &user.CreatedAt, &user.UpdatedAt)
+	switch err {
+	case sql.ErrNoRows:
+		return user, errors.ErrUserDoesntExist
+	case nil:
+		return user, err
+	default:
+		return user, err
 	}
 }
 
 func (r *UserRepository) GetAllUsers(ctx context.Context) ([]model.User, error) {
-	db := r.db
 	var users []model.User
-	rows, err := db.QueryContext(ctx, `select * from users`)
+	rows, err := r.db.QueryContext(ctx, `select * from users`)
 
 	if err != nil {
 		return nil, err
@@ -144,9 +153,7 @@ func (r *UserRepository) GetAllUsers(ctx context.Context) ([]model.User, error) 
 }
 
 func (r *UserRepository) DeleteUser(context context.Context, id int) error {
-	db := r.db
-	_, err := db.Exec(`delete from users where "id" = $1`, id)
-
+	_, err := r.db.Exec(`delete from users where "id" = $1`, id)
 	if err != nil {
 		return err
 	}

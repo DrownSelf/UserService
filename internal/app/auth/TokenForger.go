@@ -10,14 +10,8 @@ import (
 )
 
 type TokenForger interface {
-	Encode(name string, email string, config configs.Config) (string, error)
+	Encode(name string, email string, id int, config configs.Config) (string, error)
 	Decode(cipher string) error
-}
-
-type JWTClaim struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-	jwt.StandardClaims
 }
 
 type JWTForger struct {
@@ -28,12 +22,13 @@ func NewJwt(secret string) *JWTForger {
 	return &JWTForger{secret: secret}
 }
 
-func (forger *JWTForger) Encode(name string, email string, config configs.Config) (string, error) {
+func (forger *JWTForger) Encode(name string, email string, id int, config configs.Config) (string, error) {
 	secret := []byte(forger.secret)
 	expirationTime := time.Now().Add(config.ExpTime).Unix()
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	claims := token.Claims.(jwt.MapClaims)
+	claims["id"] = id
 	claims["name"] = name
 	claims["email"] = email
 	claims["exp"] = expirationTime
@@ -53,7 +48,6 @@ func (forger *JWTForger) Decode(cipher string) error {
 			}
 			return []byte(forger.secret), nil
 		})
-
 	if err != nil {
 		return errors.ErrInvalidToken
 	}

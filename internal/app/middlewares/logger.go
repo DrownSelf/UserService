@@ -28,7 +28,7 @@ func Logger(r *repositories.LogRepo) gin.HandlerFunc {
 			params.StatusCode,
 		)
 
-		if err := r.ReportLog(context.Background(), &log); err != nil {
+		if err := r.ReportLog(context.Background(), log); err != nil {
 			fmt.Print(err)
 		}
 		return stringLog

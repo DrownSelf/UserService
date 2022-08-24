@@ -11,7 +11,7 @@ import (
 )
 
 type ILogRepo interface {
-	ReportLog(ctx context.Context, log *model.Log) error
+	ReportLog(ctx context.Context, log model.Log) error
 }
 
 type LogRepo struct {
@@ -37,8 +37,8 @@ func (r *LogRepo) DestroyRepo(ctx context.Context) error {
 	return nil
 }
 
-func (r *LogRepo) ReportLog(ctx context.Context, log *model.Log) error {
-	_, err := r.collection.InsertOne(ctx, *(log))
+func (r *LogRepo) ReportLog(ctx context.Context, log model.Log) error {
+	_, err := r.collection.InsertOne(ctx, log)
 	if err != nil {
 		return err
 	}

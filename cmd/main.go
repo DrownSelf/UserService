@@ -35,10 +35,10 @@ func main() {
 		log.Fatalf("error during connect DB: %v", err)
 	}
 	router := gin.New()
-
-	service := services.NewUserService(userRepo, auth.NewJwt(config.Secret), &auth.Hasher{}, config)
+	tokenForger := auth.NewJwt(config.Secret)
+	service := services.NewUserService(userRepo, tokenForger, &auth.Hasher{}, config)
 	handler := handlers.New(service)
-	handler.InitRoutes(router, logRepo)
+	handler.InitRoutes(router, logRepo, tokenForger)
 
 	srv := &http.Server{
 		Addr:    ":" + config.ServerPort,
@@ -70,9 +70,8 @@ func main() {
 		log.Fatal("Server Shutdown:", err)
 	}
 
-	select {
-	case <-ctx.Done():
-		log.Println("timeout of 5 sec")
-	}
+	<-ctx.Done()
+	log.Println("timeout of 5 sec")
+
 	log.Println("Server exiting")
 }
