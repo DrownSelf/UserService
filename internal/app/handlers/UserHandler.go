@@ -23,7 +23,7 @@ func New(service services.IUserService) Handler {
 }
 
 func (h *Handler) Register(ctx *gin.Context) {
-	var user DTO.CreateUserRequest
+	var user DTO.User
 	if err := ctx.ShouldBindJSON(&user); err != nil {
 		ctx.Error(errors.ErrInvalidData)
 		return
@@ -52,8 +52,8 @@ func (h *Handler) LogIn(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (h *Handler) ChangePassword(ctx *gin.Context) {
-	var user DTO.ChangeUserPassword
+func (h *Handler) ChangeUserInfo(ctx *gin.Context) {
+	var user DTO.ChangeUserRequest
 	if err := ctx.ShouldBindJSON(&user); err != nil {
 		ctx.Error(errors.ErrInvalidData)
 		return
@@ -74,7 +74,7 @@ func (h *Handler) DeleteUser(ctx *gin.Context) {
 	}
 
 	if err := h.service.DeleteUser(ctx, id.Id); err != nil {
-		ctx.Error(errors.ErrInvalidData)
+		ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusOK, "Deleted successfully")
@@ -91,7 +91,7 @@ func (h *Handler) InitRoutes(router *gin.Engine, repo *repositories.LogRepo, for
 		userGroup.POST("/login", h.LogIn)
 		authGroup := userGroup.Group("/", middlewares.AuthMiddleware(forger))
 		{
-			authGroup.PUT("", h.ChangePassword)
+			authGroup.PUT("", h.ChangeUserInfo)
 			authGroup.DELETE("", h.DeleteUser)
 		}
 	}

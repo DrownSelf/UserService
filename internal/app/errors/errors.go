@@ -41,6 +41,7 @@ func HandleErr(ctx *gin.Context) {
 			res = Res{ErrInvalidData.Error(), http.StatusBadRequest}
 		default:
 			res = Res{"", http.StatusInternalServerError}
+			log.Printf("Internal error: %s", err.Error())
 		}
 		log.Printf("Registred error: %d|%s", res.Code, res.Message)
 		ctx.AbortWithStatusJSON(res.Code, res.Message)

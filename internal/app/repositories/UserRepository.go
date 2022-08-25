@@ -7,6 +7,7 @@ import (
 
 	"InnoTaxi/internal/app/errors"
 	"InnoTaxi/internal/app/migrations"
+	"InnoTaxi/internal/pkg/DTO"
 	"InnoTaxi/internal/pkg/configs"
 	"InnoTaxi/internal/pkg/model"
 
@@ -15,12 +16,13 @@ import (
 
 type IUserRepository interface {
 	AddUser(ctx context.Context, user model.User) (int, error)
-	ChangePassword(ctx context.Context, newPassword string, id int) error
+	ChangeUser(ctx context.Context, request DTO.ChangeUserRequest, id int) error
 	GetUserById(ctx context.Context, id int) (model.User, error)
 	GetUserByPhone(ctx context.Context, phone string) (model.User, error)
 	DoesPhoneExists(ctx context.Context, phone string) error
 	GetAllUsers(ctx context.Context) ([]model.User, error)
 	DeleteUser(ctx context.Context, id int) error
+	IsDeleted(ctx context.Context, phoneNumber string) error
 }
 
 type UserRepository struct {
@@ -60,9 +62,9 @@ func (r *UserRepository) DestroyRepository(ctx context.Context) error {
 func (r *UserRepository) AddUser(ctx context.Context, user model.User) (int, error) {
 	var id int
 	createdTime := time.Now().UTC()
-	query := `insert into users ("name", "phoneNumber", "email", "password", "created_at") values($1, $2, $3, $4, $5) RETURNING id`
+	query := `insert into users ("name", "phoneNumber", "email", "password", "created_at", "is_deleted") values($1, $2, $3, $4, $5, $6) RETURNING id`
 	err := r.db.QueryRowContext(ctx, query,
-		user.Name, user.PhoneNumber, user.Email, user.Password, createdTime).Scan(&id)
+		user.Name, user.PhoneNumber, user.Email, user.Password, createdTime, false).Scan(&id)
 
 	if err != nil {
 		return -1, err
@@ -70,11 +72,12 @@ func (r *UserRepository) AddUser(ctx context.Context, user model.User) (int, err
 	return id, err
 }
 
-func (r *UserRepository) ChangePassword(ctx context.Context, newPassword string, id int) error {
+func (r *UserRepository) ChangeUser(ctx context.Context, request DTO.ChangeUserRequest, id int) error {
 	updateTime := time.Now().UTC()
-	query := `update users set "password"=$1, "updated_at"=$2 where "id" = $3`
+	query := `update users set "name"=$1, "phoneNumber"=$2, "email" = $3, "updated_at"=$4 where "id" = $5`
 
-	err := r.db.QueryRowContext(ctx, query, newPassword, updateTime, id).Err()
+	err := r.db.QueryRowContext(ctx, query, request.NewName, request.NewPhoneNumber,
+		request.NewEmail, updateTime, id).Err()
 	if err != nil {
 		return err
 	}
@@ -86,16 +89,14 @@ func (r *UserRepository) GetUserById(ctx context.Context, id int) (model.User, e
 
 	query := `select * from users where "id" = $1`
 	row := r.db.QueryRowContext(ctx, query, id)
-	err := row.Scan(&user.Id, &user.Name, &user.PhoneNumber, &user.Email, &user.Password)
-
-	switch err {
-	case sql.ErrNoRows:
-		return user, errors.ErrUserDoesntExist
-	case nil:
-		return user, nil
-	default:
+	err := row.Scan(&user.Id, &user.Name, &user.PhoneNumber, &user.Email, &user.Password, &user.Rating, &user.CreatedAt, &user.UpdatedAt, &user.IsDeleted)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = errors.ErrUserDoesntExist
+		}
 		return user, err
 	}
+	return user, nil
 }
 
 func (r *UserRepository) DoesPhoneExists(ctx context.Context, phone string) error {
@@ -103,15 +104,14 @@ func (r *UserRepository) DoesPhoneExists(ctx context.Context, phone string) erro
 
 	query := `select * from users where "phoneNumber" = $1`
 	row := r.db.QueryRowContext(ctx, query, phone)
-	err := row.Scan(&user.Id, &user.Name, &user.PhoneNumber, &user.Email, &user.Password, &user.Rating, &user.CreatedAt, &user.UpdatedAt)
-	switch err {
-	case sql.ErrNoRows:
-		return nil
-	case nil:
-		return errors.ErrUserExists
-	default:
+	err := row.Scan(&user.Id, &user.Name, &user.PhoneNumber, &user.Email, &user.Password, &user.Rating, &user.CreatedAt, &user.UpdatedAt, &user.IsDeleted)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
 		return err
 	}
+	return errors.ErrUserExists
 }
 
 func (r *UserRepository) GetUserByPhone(ctx context.Context, phone string) (model.User, error) {
@@ -119,15 +119,14 @@ func (r *UserRepository) GetUserByPhone(ctx context.Context, phone string) (mode
 
 	query := `select * from users where "phoneNumber" = $1`
 	row := r.db.QueryRowContext(ctx, query, phone)
-	err := row.Scan(&user.Id, &user.Name, &user.PhoneNumber, &user.Email, &user.Password, &user.Rating, &user.CreatedAt, &user.UpdatedAt)
-	switch err {
-	case sql.ErrNoRows:
-		return user, errors.ErrUserDoesntExist
-	case nil:
-		return user, err
-	default:
+	err := row.Scan(&user.Id, &user.Name, &user.PhoneNumber, &user.Email, &user.Password, &user.Rating, &user.CreatedAt, &user.UpdatedAt, &user.IsDeleted)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = errors.ErrUserDoesntExist
+		}
 		return user, err
 	}
+	return user, nil
 }
 
 func (r *UserRepository) GetAllUsers(ctx context.Context) ([]model.User, error) {
@@ -142,7 +141,7 @@ func (r *UserRepository) GetAllUsers(ctx context.Context) ([]model.User, error) 
 
 	for rows.Next() {
 		var user model.User
-		err = rows.Scan(&user.Id, &user.Name, &user.PhoneNumber, &user.Email, &user.Password)
+		err = rows.Scan(&user.Id, &user.Name, &user.PhoneNumber, &user.Email, &user.Password, &user.Rating, &user.CreatedAt, &user.UpdatedAt, &user.IsDeleted)
 
 		if err != nil {
 			return nil, err
@@ -153,9 +152,22 @@ func (r *UserRepository) GetAllUsers(ctx context.Context) ([]model.User, error) 
 }
 
 func (r *UserRepository) DeleteUser(context context.Context, id int) error {
-	_, err := r.db.Exec(`delete from users where "id" = $1`, id)
+	_, err := r.db.Exec(`update users set "is_deleted"= true where "id" = $1`, id)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (r *UserRepository) IsDeleted(ctx context.Context, phoneNumber string) error {
+	var IsDeleted bool
+	query := `select "is_deleted" from users where "phoneNumber" = $1`
+	err := r.db.QueryRowContext(ctx, query, phoneNumber).Scan(&IsDeleted)
+	if err != nil {
+		return err
+	}
+	if IsDeleted {
+		return errors.ErrUserDoesntExist
 	}
 	return nil
 }
