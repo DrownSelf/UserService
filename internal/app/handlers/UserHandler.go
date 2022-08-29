@@ -6,8 +6,8 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	"InnoTaxi/internal/app/appErrors"
 	"InnoTaxi/internal/app/auth"
-	"InnoTaxi/internal/app/errors"
 	"InnoTaxi/internal/app/middlewares"
 	"InnoTaxi/internal/app/repositories"
 	"InnoTaxi/internal/app/services"
@@ -15,21 +15,21 @@ import (
 )
 
 type Handler struct {
-	service services.IUserService
+	userService services.IUserService
 }
 
 func New(service services.IUserService) Handler {
-	return Handler{service: service}
+	return Handler{userService: service}
 }
 
 func (h *Handler) Register(ctx *gin.Context) {
 	var user DTO.User
 	if err := ctx.ShouldBindJSON(&user); err != nil {
-		ctx.Error(errors.ErrInvalidData)
+		ctx.Error(appErrors.ErrInvalidData)
 		return
 	}
 
-	id, err := h.service.RegisterUser(ctx, user)
+	id, err := h.userService.RegisterUser(ctx, user)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -40,11 +40,11 @@ func (h *Handler) Register(ctx *gin.Context) {
 func (h *Handler) LogIn(ctx *gin.Context) {
 	var user DTO.LogInUserRequest
 	if err := ctx.ShouldBindJSON(&user); err != nil {
-		ctx.Error(errors.ErrInvalidData)
+		ctx.Error(appErrors.ErrInvalidData)
 		return
 	}
 
-	response, err := h.service.LogInUser(ctx, user)
+	response, err := h.userService.LogInUser(ctx, user)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -55,11 +55,11 @@ func (h *Handler) LogIn(ctx *gin.Context) {
 func (h *Handler) ChangeUserInfo(ctx *gin.Context) {
 	var user DTO.ChangeUserRequest
 	if err := ctx.ShouldBindJSON(&user); err != nil {
-		ctx.Error(errors.ErrInvalidData)
+		ctx.Error(appErrors.ErrInvalidData)
 		return
 	}
 
-	if err := h.service.ChangeUserPassword(ctx, user); err != nil {
+	if err := h.userService.ChangeUserPassword(ctx, user); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -69,28 +69,66 @@ func (h *Handler) ChangeUserInfo(ctx *gin.Context) {
 func (h *Handler) DeleteUser(ctx *gin.Context) {
 	var id DTO.DeleteUserRequest
 	if err := ctx.ShouldBindJSON(&id); err != nil {
-		ctx.Error(errors.ErrInvalidData)
+		ctx.Error(appErrors.ErrInvalidData)
 		return
 	}
 
-	if err := h.service.DeleteUser(ctx, id.Id); err != nil {
+	if err := h.userService.DeleteUser(ctx, id.Id); err != nil {
 		ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusOK, "Deleted successfully")
 }
 
-func (h *Handler) InitRoutes(router *gin.Engine, repo *repositories.LogRepo, forger auth.TokenForger) {
+func (h *Handler) GetUserInfo(ctx *gin.Context) {
+	var phoneNumber DTO.GetUserInfoRequest
+	if err := ctx.ShouldBindJSON(&phoneNumber); err != nil {
+		ctx.Error(appErrors.ErrInvalidData)
+		return
+	}
+
+	user, err := h.userService.GetUserByPhone(ctx, phoneNumber.PhoneNumber)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	userResponse := DTO.GetUserResponse{
+		Name:        user.Name,
+		PhoneNumber: user.PhoneNumber,
+		Email:       user.Email,
+		Rating:      user.Rating,
+	}
+	ctx.JSON(http.StatusOK, userResponse)
+}
+
+func (h *Handler) LogOut(ctx *gin.Context) {
+	if err := h.userService.LogOutUser(ctx, ctx.GetHeader("Authorization")); err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.JSON(http.StatusOK, "Success log out")
+}
+
+type MiddlewareDependencies struct {
+	LogRepository   repositories.ILogRepo
+	Forger          auth.TokenForger
+	CacheRepository repositories.ICacheRepository
+}
+
+func (h *Handler) InitRoutes(router *gin.Engine, dependencies MiddlewareDependencies) {
 	router.Use(cors.Default())
-	router.Use(gin.Recovery(), middlewares.Logger(repo))
-	router.Use(errors.HandleErr)
+	router.Use(gin.Recovery(), middlewares.Logger(dependencies.LogRepository))
+	router.Use(appErrors.HandleErr)
 
 	userGroup := router.Group("/user")
 	{
 		userGroup.POST("/register", h.Register)
 		userGroup.POST("/login", h.LogIn)
-		authGroup := userGroup.Group("/", middlewares.AuthMiddleware(forger))
+		authGroup := userGroup.Group("", middlewares.TokenDecoderMiddleware(dependencies.Forger, dependencies.CacheRepository))
 		{
+			authGroup.GET("/logout", h.LogOut)
+			authGroup.GET("", h.GetUserInfo)
 			authGroup.PUT("", h.ChangeUserInfo)
 			authGroup.DELETE("", h.DeleteUser)
 		}

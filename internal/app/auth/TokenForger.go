@@ -5,7 +5,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 
-	"InnoTaxi/internal/app/errors"
 	"InnoTaxi/internal/pkg/configs"
 )
 
@@ -49,14 +48,10 @@ func (forger *JWTForger) Encode(tokenClaims TokenClaims, config configs.Config) 
 func (forger *JWTForger) Decode(cipher string) error {
 	_, err := jwt.Parse(cipher,
 		func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, errors.ErrInvalidToken
-			}
 			return []byte(forger.secret), nil
 		})
 	if err != nil {
-		return errors.ErrInvalidToken
+		return err
 	}
-
 	return nil
 }

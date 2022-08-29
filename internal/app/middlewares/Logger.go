@@ -11,7 +11,7 @@ import (
 	"InnoTaxi/internal/pkg/model"
 )
 
-func Logger(r *repositories.LogRepo) gin.HandlerFunc {
+func Logger(r repositories.ILogRepo) gin.HandlerFunc {
 	return gin.LoggerWithFormatter(func(params gin.LogFormatterParams) string {
 		log := model.Log{
 			LogTime:    params.TimeStamp.Format(time.RFC1123),

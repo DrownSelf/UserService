@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 
 	"InnoTaxi/internal/app/auth"
 	"InnoTaxi/internal/app/repositories"
@@ -12,41 +11,44 @@ import (
 )
 
 type IUserService interface {
-	RegisterUser(ctx context.Context, request DTO.User) (int, error)
+	RegisterUser(ctx context.Context, user DTO.User) (int, error)
 	LogInUser(ctx context.Context, request DTO.LogInUserRequest) (string, error)
 	DeleteUser(ctx context.Context, id int) error
 	ChangeUserPassword(ctx context.Context, request DTO.ChangeUserRequest) error
+	GetUserByPhone(ctx context.Context, phoneNumber string) (model.User, error)
+	LogOutUser(ctx context.Context, token string) error
 }
 
 type UserService struct {
-	repository  repositories.IUserRepository
-	tokenForger auth.TokenForger
-	hasher      auth.IHasher
-	config      *configs.Config
+	userRepository  repositories.IUserRepository
+	cacheRepository repositories.ICacheRepository
+	tokenForger     auth.TokenForger
+	hasher          auth.IHasher
+	config          *configs.Config
 }
 
-func NewUserService(repository repositories.IUserRepository, tokenForger auth.TokenForger, hasher auth.IHasher, config *configs.Config) *UserService {
-	return &UserService{repository: repository, tokenForger: tokenForger, hasher: hasher, config: config}
+func NewUserService(userRepository repositories.IUserRepository, cacheRepository repositories.ICacheRepository, tokenForger auth.TokenForger, hasher auth.IHasher, config *configs.Config) *UserService {
+	return &UserService{userRepository: userRepository, cacheRepository: cacheRepository, tokenForger: tokenForger, hasher: hasher, config: config}
 }
 
-func (s *UserService) RegisterUser(ctx context.Context, request DTO.User) (int, error) {
-	hashedPassword, err := s.hasher.HashPassword(request.Password)
+func (s *UserService) RegisterUser(ctx context.Context, user DTO.User) (int, error) {
+	hashedPassword, err := s.hasher.HashPassword(user.Password)
 	if err != nil {
 		return -1, err
 	}
 
-	if err = s.repository.DoesPhoneExists(ctx, request.PhoneNumber); err != nil {
+	if err = s.userRepository.DoesPhoneExist(ctx, user.PhoneNumber); err != nil {
 		return -1, err
 	}
 
 	newUser := model.User{
-		Name:        request.Name,
-		Email:       request.Email,
-		PhoneNumber: request.PhoneNumber,
+		Name:        user.Name,
+		Email:       user.Email,
+		PhoneNumber: user.PhoneNumber,
 		Password:    hashedPassword,
 	}
 
-	id, err := s.repository.AddUser(ctx, newUser)
+	id, err := s.userRepository.AddUser(ctx, newUser)
 	if err != nil {
 		return -1, err
 	}
@@ -55,12 +57,8 @@ func (s *UserService) RegisterUser(ctx context.Context, request DTO.User) (int, 
 }
 
 func (s *UserService) LogInUser(ctx context.Context, request DTO.LogInUserRequest) (string, error) {
-	user, err := s.repository.GetUserByPhone(ctx, request.PhoneNumber)
+	user, err := s.userRepository.GetUserByPhone(ctx, request.PhoneNumber)
 	if err != nil {
-		return "", err
-	}
-
-	if err = s.repository.IsDeleted(ctx, request.PhoneNumber); err != nil {
 		return "", err
 	}
 
@@ -74,7 +72,7 @@ func (s *UserService) LogInUser(ctx context.Context, request DTO.LogInUserReques
 			user.Password,
 			user.Email,
 		},
-		*(s.config))
+		*s.config)
 	if err != nil {
 		return "", err
 	}
@@ -83,7 +81,7 @@ func (s *UserService) LogInUser(ctx context.Context, request DTO.LogInUserReques
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, id int) error {
-	err := s.repository.DeleteUser(ctx, id)
+	err := s.userRepository.DeleteUser(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -91,26 +89,32 @@ func (s *UserService) DeleteUser(ctx context.Context, id int) error {
 }
 
 func (s *UserService) ChangeUserPassword(ctx context.Context, request DTO.ChangeUserRequest) error {
-	user, err := s.repository.GetUserByPhone(ctx, request.PhoneNumber)
+	user, err := s.userRepository.GetUserByPhone(ctx, request.PhoneNumber)
 	if err != nil {
 		return err
 	}
 
-	if err = s.repository.DoesPhoneExists(ctx, request.NewPhoneNumber); err != nil {
+	if err = s.userRepository.DoesPhoneExist(ctx, request.NewPhoneNumber); err != nil {
 		return err
 	}
 
-	if err = s.repository.ChangeUser(ctx, request, user.Id); err != nil {
+	if err = s.userRepository.ChangeUser(ctx, request, user.Id); err != nil {
 		return err
 	}
 	return nil
 }
 
-//idk what i gotta return and best what i envented is it
-func (s *UserService) GetUserInfo(ctx context.Context, phoneNumber string) ([]byte, error) {
-	user, err := s.repository.GetUserByPhone(ctx, phoneNumber)
+func (s *UserService) GetUserByPhone(ctx context.Context, phoneNumber string) (model.User, error) {
+	user, err := s.userRepository.GetUserByPhone(ctx, phoneNumber)
 	if err != nil {
-		return nil, err
+		return user, err
 	}
-	return json.Marshal(user)
+	return user, nil
+}
+
+func (s *UserService) LogOutUser(ctx context.Context, token string) error {
+	if err := s.cacheRepository.CreateInvalidToken(ctx, token); err != nil {
+		return err
+	}
+	return nil
 }

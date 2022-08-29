@@ -34,11 +34,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("error during connect DB: %v", err)
 	}
+
+	cacheRepo := repositories.NewCacheRepo(*config)
+
 	router := gin.New()
 	tokenForger := auth.NewJwt(config.Secret)
-	service := services.NewUserService(userRepo, tokenForger, &auth.Hasher{}, config)
+	service := services.NewUserService(userRepo, cacheRepo, tokenForger, &auth.Hasher{}, config)
 	handler := handlers.New(service)
-	handler.InitRoutes(router, logRepo, tokenForger)
+	handler.InitRoutes(router, handlers.MiddlewareDependencies{
+		LogRepository:   logRepo,
+		Forger:          tokenForger,
+		CacheRepository: cacheRepo,
+	})
 
 	srv := &http.Server{
 		Addr:    ":" + config.ServerPort,

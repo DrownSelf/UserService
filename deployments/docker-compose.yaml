@@ -24,6 +24,15 @@ services:
     ports:
       - "27017:27017"
 
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning --requirepass 150869
+    volumes:
+      - ../../volumes/redis:/data
+
   webinnotaxi:
     container_name: webinnotaxi
     restart: on-failure
