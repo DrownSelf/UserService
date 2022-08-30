@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"InnoTaxi/internal/app/appErrors"
 	"InnoTaxi/internal/app/auth"
@@ -111,16 +112,18 @@ func (h *Handler) LogOut(ctx *gin.Context) {
 }
 
 type MiddlewareDependencies struct {
-	LogRepository   repositories.ILogRepo
-	Forger          auth.TokenForger
-	CacheRepository repositories.ICacheRepository
+	LogRepository    repositories.ILogRepo
+	Forger           auth.TokenForger
+	CacheRepository  repositories.ICacheRepository
+	MetricRepository *repositories.PrometheusRepository
 }
 
 func (h *Handler) InitRoutes(router *gin.Engine, dependencies MiddlewareDependencies) {
 	router.Use(cors.Default())
 	router.Use(gin.Recovery(), middlewares.Logger(dependencies.LogRepository))
 	router.Use(appErrors.HandleErr)
-
+	router.Use(middlewares.ObserveStats(dependencies.MetricRepository))
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	userGroup := router.Group("/user")
 	{
 		userGroup.POST("/register", h.Register)

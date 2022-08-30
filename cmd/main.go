@@ -25,7 +25,7 @@ func main() {
 		log.Fatalf("error during reading config: %v", err)
 	}
 
-	userRepo, err := repositories.NewUserRepository(config)
+	userRepo, err := repositories.NewUserRepo(config)
 	if err != nil {
 		log.Fatalf("error during connect DB: %v", err)
 	}
@@ -38,13 +38,15 @@ func main() {
 	cacheRepo := repositories.NewCacheRepo(*config)
 
 	router := gin.New()
+	metricsRepo := repositories.NewMetricsRepo(router)
 	tokenForger := auth.NewJwt(config.Secret)
 	service := services.NewUserService(userRepo, cacheRepo, tokenForger, &auth.Hasher{}, config)
 	handler := handlers.New(service)
 	handler.InitRoutes(router, handlers.MiddlewareDependencies{
-		LogRepository:   logRepo,
-		Forger:          tokenForger,
-		CacheRepository: cacheRepo,
+		LogRepository:    logRepo,
+		Forger:           tokenForger,
+		CacheRepository:  cacheRepo,
+		MetricRepository: metricsRepo,
 	})
 
 	srv := &http.Server{

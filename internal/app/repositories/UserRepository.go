@@ -28,7 +28,7 @@ type UserRepository struct {
 	db *sql.DB
 }
 
-func NewUserRepository(config *configs.Config) (*UserRepository, error) {
+func NewUserRepo(config *configs.Config) (*UserRepository, error) {
 	db, err := sql.Open("postgres", config.PgSource)
 	if err != nil {
 		return nil, err
