@@ -42,6 +42,18 @@ services:
     volumes:
       - ./prometheus:/etc/prometheus
 
+  grafana:
+    image: grafana/grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./grafana/config.monitoring
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+
   webinnotaxi:
     container_name: webinnotaxi
     restart: on-failure
