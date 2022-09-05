@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -53,14 +54,14 @@ func (h *Handler) LogIn(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (h *Handler) ChangeUserInfo(ctx *gin.Context) {
+func (h *Handler) UpdateUser(ctx *gin.Context) {
 	var user DTO.ChangeUserRequest
 	if err := ctx.ShouldBindJSON(&user); err != nil {
 		ctx.Error(appErrors.ErrInvalidData)
 		return
 	}
 
-	if err := h.userService.ChangeUserPassword(ctx, user); err != nil {
+	if err := h.userService.UpdateUser(ctx, user); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -81,7 +82,7 @@ func (h *Handler) DeleteUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, "Deleted successfully")
 }
 
-func (h *Handler) GetUserInfo(ctx *gin.Context) {
+func (h *Handler) GetUser(ctx *gin.Context) {
 	var phoneNumber DTO.GetUserInfoRequest
 	if err := ctx.ShouldBindJSON(&phoneNumber); err != nil {
 		ctx.Error(appErrors.ErrInvalidData)
@@ -123,7 +124,10 @@ func (h *Handler) InitRoutes(router *gin.Engine, dependencies MiddlewareDependen
 	router.Use(gin.Recovery(), middlewares.Logger(dependencies.LogRepository))
 	router.Use(appErrors.HandleErr)
 	router.Use(middlewares.ObserveStats(dependencies.MetricRepository))
+
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	pprof.Register(router)
+
 	userGroup := router.Group("/user")
 	{
 		userGroup.POST("/register", h.Register)
@@ -131,9 +135,10 @@ func (h *Handler) InitRoutes(router *gin.Engine, dependencies MiddlewareDependen
 		authGroup := userGroup.Group("", middlewares.TokenDecoderMiddleware(dependencies.Forger, dependencies.CacheRepository))
 		{
 			authGroup.GET("/logout", h.LogOut)
-			authGroup.GET("", h.GetUserInfo)
-			authGroup.PUT("", h.ChangeUserInfo)
+			authGroup.GET("", h.GetUser)
+			authGroup.PUT("", h.UpdateUser)
 			authGroup.DELETE("", h.DeleteUser)
 		}
 	}
+	pprof.RouteRegister(userGroup, "pprof")
 }

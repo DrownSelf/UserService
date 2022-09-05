@@ -17,7 +17,7 @@ func TokenDecoderMiddleware(forger auth.TokenForger, repository repositories.ICa
 	return func(ctx *gin.Context) {
 		token := ctx.GetHeader("Authorization")
 		if repository.DoesInvalidTokenExist(ctx, token) {
-			log.Printf("Invalid Token hasher")
+			log.Printf("You exited from you account. Log in system again")
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, appErrors.ErrInvalidToken.Error())
 			return
 		}

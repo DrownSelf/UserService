@@ -14,7 +14,7 @@ type IUserService interface {
 	RegisterUser(ctx context.Context, user DTO.User) (int, error)
 	LogInUser(ctx context.Context, request DTO.LogInUserRequest) (string, error)
 	DeleteUser(ctx context.Context, id int) error
-	ChangeUserPassword(ctx context.Context, request DTO.ChangeUserRequest) error
+	UpdateUser(ctx context.Context, request DTO.ChangeUserRequest) error
 	GetUserByPhone(ctx context.Context, phoneNumber string) (model.User, error)
 	LogOutUser(ctx context.Context, token string) error
 }
@@ -32,12 +32,12 @@ func NewUserService(userRepository repositories.IUserRepository, cacheRepository
 }
 
 func (s *UserService) RegisterUser(ctx context.Context, user DTO.User) (int, error) {
-	hashedPassword, err := s.hasher.HashPassword(user.Password)
-	if err != nil {
+	if err := s.userRepository.DoesPhoneExist(ctx, user.PhoneNumber); err != nil {
 		return -1, err
 	}
 
-	if err = s.userRepository.DoesPhoneExist(ctx, user.PhoneNumber); err != nil {
+	hashedPassword, err := s.hasher.HashPassword(user.Password)
+	if err != nil {
 		return -1, err
 	}
 
@@ -88,7 +88,7 @@ func (s *UserService) DeleteUser(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *UserService) ChangeUserPassword(ctx context.Context, request DTO.ChangeUserRequest) error {
+func (s *UserService) UpdateUser(ctx context.Context, request DTO.ChangeUserRequest) error {
 	user, err := s.userRepository.GetUserByPhone(ctx, request.PhoneNumber)
 	if err != nil {
 		return err
@@ -98,7 +98,7 @@ func (s *UserService) ChangeUserPassword(ctx context.Context, request DTO.Change
 		return err
 	}
 
-	if err = s.userRepository.ChangeUser(ctx, request, user.Id); err != nil {
+	if err = s.userRepository.UpdateUser(ctx, request, user.Id); err != nil {
 		return err
 	}
 	return nil

@@ -9,12 +9,11 @@ import (
 
 var (
 	HttpHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace:   "http_server",
-		Subsystem:   "",
-		Name:        "rps",
+		Namespace:   "http",
+		Name:        "server_rps",
 		Help:        "Histogram of response latency of http handlers",
 		ConstLabels: nil,
-		Buckets:     nil,
+		Buckets:     prometheus.DefBuckets,
 	}, []string{"method", "code", "uri"})
 )
 

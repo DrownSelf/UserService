@@ -16,7 +16,7 @@ import (
 
 type IUserRepository interface {
 	AddUser(ctx context.Context, user model.User) (int, error)
-	ChangeUser(ctx context.Context, request DTO.ChangeUserRequest, id int) error
+	UpdateUser(ctx context.Context, request DTO.ChangeUserRequest, id int) error
 	GetUserById(ctx context.Context, id int) (model.User, error)
 	GetUserByPhone(ctx context.Context, phone string) (model.User, error)
 	DoesPhoneExist(ctx context.Context, phone string) error
@@ -71,7 +71,7 @@ func (r *UserRepository) AddUser(ctx context.Context, user model.User) (int, err
 	return id, err
 }
 
-func (r *UserRepository) ChangeUser(ctx context.Context, request DTO.ChangeUserRequest, id int) error {
+func (r *UserRepository) UpdateUser(ctx context.Context, request DTO.ChangeUserRequest, id int) error {
 	updateTime := time.Now().UTC()
 	query := `update users set "name"=$1, "phoneNumber"=$2, "email" = $3, "updated_at"=$4 where "id" = $5`
 
