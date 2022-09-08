@@ -1,6 +1,6 @@
-# Order-service
+# User Service
 ***
-The service provides functionality to work with orders.
+The service provides functionality to work with user requests.
 
 # External requirements
 ***
