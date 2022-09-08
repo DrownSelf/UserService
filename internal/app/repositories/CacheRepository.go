@@ -10,7 +10,7 @@ import (
 )
 
 type ICacheRepository interface {
-	CreateInvalidToken(ctx context.Context, token string) error
+	PutToken(ctx context.Context, token string) error
 	DoesInvalidTokenExist(ctx context.Context, token string) bool
 }
 
@@ -44,7 +44,7 @@ func (r *CacheRepository) DestroyRepo(ctx context.Context) error {
 	}
 }
 
-func (r *CacheRepository) CreateInvalidToken(ctx context.Context, token string) error {
+func (r *CacheRepository) PutToken(ctx context.Context, token string) error {
 	err := r.myCache.Once(&cache.Item{
 		Ctx:   ctx,
 		Key:   token,

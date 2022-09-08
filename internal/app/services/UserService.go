@@ -113,7 +113,7 @@ func (s *UserService) GetUserByPhone(ctx context.Context, phoneNumber string) (m
 }
 
 func (s *UserService) LogOutUser(ctx context.Context, token string) error {
-	if err := s.cacheRepository.CreateInvalidToken(ctx, token); err != nil {
+	if err := s.cacheRepository.PutToken(ctx, token); err != nil {
 		return err
 	}
 	return nil

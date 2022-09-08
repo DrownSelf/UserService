@@ -31,9 +31,9 @@ func (m *MockICacheRepository) EXPECT() *MockICacheRepositoryMockRecorder {
 }
 
 // CreateInvalidToken mocks base method.
-func (m *MockICacheRepository) CreateInvalidToken(ctx context.Context, token string) error {
+func (m *MockICacheRepository) PutToken(ctx context.Context, token string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateInvalidToken", ctx, token)
+	ret := m.ctrl.Call(m, "PutToken", ctx, token)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
@@ -41,7 +41,7 @@ func (m *MockICacheRepository) CreateInvalidToken(ctx context.Context, token str
 // CreateInvalidToken indicates an expected call of CreateInvalidToken.
 func (mr *MockICacheRepositoryMockRecorder) CreateInvalidToken(ctx, token interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInvalidToken", reflect.TypeOf((*MockICacheRepository)(nil).CreateInvalidToken), ctx, token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutToken", reflect.TypeOf((*MockICacheRepository)(nil).PutToken), ctx, token)
 }
 
 // DoesInvalidTokenExist mocks base method.

@@ -125,20 +125,22 @@ func (h *Handler) InitRoutes(router *gin.Engine, dependencies MiddlewareDependen
 	router.Use(appErrors.HandleErr)
 	router.Use(middlewares.ObserveStats(dependencies.MetricRepository))
 
-	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
-	pprof.Register(router)
-
-	userGroup := router.Group("/user")
+	v1 := router.Group("/api/v1")
 	{
-		userGroup.POST("/register", h.Register)
-		userGroup.POST("/login", h.LogIn)
-		authGroup := userGroup.Group("", middlewares.TokenDecoderMiddleware(dependencies.Forger, dependencies.CacheRepository))
+		userGroup := v1.Group("/user")
 		{
-			authGroup.GET("/logout", h.LogOut)
-			authGroup.GET("", h.GetUser)
-			authGroup.PUT("", h.UpdateUser)
-			authGroup.DELETE("", h.DeleteUser)
+			userGroup.POST("/register", h.Register)
+			userGroup.POST("/login", h.LogIn)
+			authGroup := userGroup.Group("", middlewares.TokenDecoderMiddleware(dependencies.Forger, dependencies.CacheRepository))
+			{
+				authGroup.GET("/logout", h.LogOut)
+				authGroup.GET("", h.GetUser)
+				authGroup.PUT("", h.UpdateUser)
+				authGroup.DELETE("", h.DeleteUser)
+			}
 		}
 	}
-	pprof.RouteRegister(userGroup, "pprof")
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	pprof.Register(router)
+	pprof.RouteRegister(v1, "pprof")
 }

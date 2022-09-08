@@ -11,7 +11,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
+	_ "InnoTaxi/cmd/docs"
 	"InnoTaxi/internal/app/auth"
 	"InnoTaxi/internal/app/handlers"
 	"InnoTaxi/internal/app/repositories"
@@ -48,7 +51,7 @@ func main() {
 		CacheRepository:  cacheRepo,
 		MetricRepository: metricsRepo,
 	})
-
+	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	srv := &http.Server{
 		Addr:    ":" + config.ServerPort,
 		Handler: router,
