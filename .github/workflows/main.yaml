@@ -26,9 +26,6 @@ jobs:
 
       - name: Run golint
         run: golangci-lint run
-
-      - name: Transfer to test dir
-        run: cd test
         
       - name: Run tests
-        run: go test
+        run: go test -race -vet=off ./...
