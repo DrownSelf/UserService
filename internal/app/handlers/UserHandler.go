@@ -13,7 +13,7 @@ import (
 	"InnoTaxi/internal/app/middlewares"
 	"InnoTaxi/internal/app/repositories"
 	"InnoTaxi/internal/app/services"
-	"InnoTaxi/internal/pkg/DTO"
+	"InnoTaxi/internal/pkg/dto"
 )
 
 type Handler struct {
@@ -25,77 +25,77 @@ func New(service services.IUserService) Handler {
 }
 
 func (h *Handler) Register(ctx *gin.Context) {
-	var user DTO.User
+	var user dto.User
 	if err := ctx.ShouldBindJSON(&user); err != nil {
-		ctx.Error(appErrors.ErrInvalidData)
+		_ = ctx.Error(appErrors.ErrInvalidData)
 		return
 	}
 
 	id, err := h.userService.RegisterUser(ctx, user)
 	if err != nil {
-		ctx.Error(err)
+		_ = ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusCreated, id)
 }
 
 func (h *Handler) LogIn(ctx *gin.Context) {
-	var user DTO.LogInUserRequest
+	var user dto.LogInUserRequest
 	if err := ctx.ShouldBindJSON(&user); err != nil {
-		ctx.Error(appErrors.ErrInvalidData)
+		_ = ctx.Error(appErrors.ErrInvalidData)
 		return
 	}
 
 	response, err := h.userService.LogInUser(ctx, user)
 	if err != nil {
-		ctx.Error(err)
+		_ = ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusOK, response)
 }
 
 func (h *Handler) UpdateUser(ctx *gin.Context) {
-	var user DTO.ChangeUserRequest
+	var user dto.ChangeUserRequest
 	if err := ctx.ShouldBindJSON(&user); err != nil {
-		ctx.Error(appErrors.ErrInvalidData)
+		_ = ctx.Error(appErrors.ErrInvalidData)
 		return
 	}
 
 	if err := h.userService.UpdateUser(ctx, user); err != nil {
-		ctx.Error(err)
+		_ = ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusOK, "Updated successfully")
 }
 
 func (h *Handler) DeleteUser(ctx *gin.Context) {
-	var id DTO.DeleteUserRequest
+	var id dto.DeleteUserRequest
 	if err := ctx.ShouldBindJSON(&id); err != nil {
-		ctx.Error(appErrors.ErrInvalidData)
+		_ = ctx.Error(appErrors.ErrInvalidData)
 		return
 	}
 
 	if err := h.userService.DeleteUser(ctx, id.Id); err != nil {
-		ctx.Error(err)
+		_ = ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusOK, "Deleted successfully")
 }
 
 func (h *Handler) GetUser(ctx *gin.Context) {
-	var phoneNumber DTO.GetUserInfoRequest
+	var phoneNumber dto.GetUserInfoRequest
 	if err := ctx.ShouldBindJSON(&phoneNumber); err != nil {
-		ctx.Error(appErrors.ErrInvalidData)
+		_ = ctx.Error(appErrors.ErrInvalidData)
 		return
 	}
 
 	user, err := h.userService.GetUserByPhone(ctx, phoneNumber.PhoneNumber)
 	if err != nil {
-		ctx.Error(err)
+		_ = ctx.Error(err)
 		return
 	}
 
-	userResponse := DTO.GetUserResponse{
+	userResponse := dto.GetUserResponse{
 		Name:        user.Name,
 		PhoneNumber: user.PhoneNumber,
 		Email:       user.Email,
@@ -106,7 +106,7 @@ func (h *Handler) GetUser(ctx *gin.Context) {
 
 func (h *Handler) LogOut(ctx *gin.Context) {
 	if err := h.userService.LogOutUser(ctx, ctx.GetHeader("Authorization")); err != nil {
-		ctx.Error(err)
+		_ = ctx.Error(err)
 		return
 	}
 	ctx.JSON(http.StatusOK, "Success log out")

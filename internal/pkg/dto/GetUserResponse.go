@@ -1,4 +1,4 @@
-package DTO
+package dto
 
 type GetUserResponse struct {
 	Name        string `json:"name"`

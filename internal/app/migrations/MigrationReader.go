@@ -11,7 +11,9 @@ import (
 var embedMigrations embed.FS
 
 func Up(db *sql.DB) error {
-	goose.SetDialect("postgres")
+	if err := goose.SetDialect("postgres"); err != nil {
+		return err
+	}
 	goose.SetBaseFS(embedMigrations)
 
 	if err := goose.Up(db, "."); err != nil {
@@ -21,7 +23,9 @@ func Up(db *sql.DB) error {
 }
 
 func Down(db *sql.DB) error {
-	goose.SetDialect("postgres")
+	if err := goose.SetDialect("postgres"); err != nil {
+		return err
+	}
 	goose.SetBaseFS(embedMigrations)
 
 	if err := goose.Down(db, "."); err != nil {

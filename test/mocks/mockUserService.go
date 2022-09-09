@@ -4,7 +4,7 @@ import (
 	"context"
 	"reflect"
 
-	"InnoTaxi/internal/pkg/DTO"
+	"InnoTaxi/internal/pkg/dto"
 	"InnoTaxi/internal/pkg/model"
 
 	"github.com/golang/mock/gomock"
@@ -34,7 +34,7 @@ func (m *MockIUserService) EXPECT() *MockIUserServiceMockRecorder {
 }
 
 // ChangeUserPassword mocks base method.
-func (m *MockIUserService) UpdateUser(ctx context.Context, request DTO.ChangeUserRequest) error {
+func (m *MockIUserService) UpdateUser(ctx context.Context, request dto.ChangeUserRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUser", ctx, request)
 	ret0, _ := ret[0].(error)
@@ -77,7 +77,7 @@ func (mr *MockIUserServiceMockRecorder) GetUserByPhone(ctx, phoneNumber interfac
 }
 
 // LogInUser mocks base method.
-func (m *MockIUserService) LogInUser(ctx context.Context, request DTO.LogInUserRequest) (string, error) {
+func (m *MockIUserService) LogInUser(ctx context.Context, request dto.LogInUserRequest) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LogInUser", ctx, request)
 	ret0, _ := ret[0].(string)
@@ -106,7 +106,7 @@ func (mr *MockIUserServiceMockRecorder) LogOutUser(ctx, token interface{}) *gomo
 }
 
 // RegisterUser mocks base method.
-func (m *MockIUserService) RegisterUser(ctx context.Context, user DTO.User) (int, error) {
+func (m *MockIUserService) RegisterUser(ctx context.Context, user dto.User) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterUser", ctx, user)
 	ret0, _ := ret[0].(int)

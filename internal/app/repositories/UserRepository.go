@@ -7,8 +7,8 @@ import (
 
 	"InnoTaxi/internal/app/appErrors"
 	"InnoTaxi/internal/app/migrations"
-	"InnoTaxi/internal/pkg/DTO"
 	"InnoTaxi/internal/pkg/configs"
+	"InnoTaxi/internal/pkg/dto"
 	"InnoTaxi/internal/pkg/model"
 
 	_ "github.com/lib/pq"
@@ -16,7 +16,7 @@ import (
 
 type IUserRepository interface {
 	AddUser(ctx context.Context, user model.User) (int, error)
-	UpdateUser(ctx context.Context, request DTO.ChangeUserRequest, id int) error
+	UpdateUser(ctx context.Context, request dto.ChangeUserRequest, id int) error
 	GetUserById(ctx context.Context, id int) (model.User, error)
 	GetUserByPhone(ctx context.Context, phone string) (model.User, error)
 	DoesPhoneExist(ctx context.Context, phone string) error
@@ -71,7 +71,7 @@ func (r *UserRepository) AddUser(ctx context.Context, user model.User) (int, err
 	return id, err
 }
 
-func (r *UserRepository) UpdateUser(ctx context.Context, request DTO.ChangeUserRequest, id int) error {
+func (r *UserRepository) UpdateUser(ctx context.Context, request dto.ChangeUserRequest, id int) error {
 	updateTime := time.Now().UTC()
 	query := `update users set "name"=$1, "phoneNumber"=$2, "email" = $3, "updated_at"=$4 where "id" = $5`
 

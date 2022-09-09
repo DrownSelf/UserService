@@ -14,8 +14,8 @@ import (
 	"InnoTaxi/internal/app/appErrors"
 	"InnoTaxi/internal/app/auth"
 	"InnoTaxi/internal/app/services"
-	"InnoTaxi/internal/pkg/DTO"
 	"InnoTaxi/internal/pkg/configs"
+	"InnoTaxi/internal/pkg/dto"
 	"InnoTaxi/internal/pkg/model"
 	test "InnoTaxi/test/mocks"
 )
@@ -32,12 +32,12 @@ func TestServiceRegister(t *testing.T) {
 	config := configs.Config{Secret: "SilentSecret"}
 
 	type hashBehaviour func(r *test.MockIHasher, password string)
-	type checkBehaviour func(r *test.MockIUserRepository, user DTO.User, ctx context.Context)
+	type checkBehaviour func(r *test.MockIUserRepository, user dto.User, ctx context.Context)
 	type addBehaviour func(r *test.MockIUserRepository, user model.User, ctx context.Context)
 
 	testTable := []struct {
 		ctx            context.Context
-		incomingData   DTO.User
+		incomingData   dto.User
 		newUser        model.User
 		expectedIndex  int
 		checkBehaviour checkBehaviour
@@ -46,7 +46,7 @@ func TestServiceRegister(t *testing.T) {
 	}{
 		{
 			ctx,
-			DTO.User{
+			dto.User{
 				Name:        "Walter White",
 				Password:    "8004355",
 				Email:       "strigelskiy.petr@gmail.com",
@@ -58,7 +58,7 @@ func TestServiceRegister(t *testing.T) {
 				PhoneNumber: "+375447505544",
 			},
 			-1,
-			func(r *test.MockIUserRepository, user DTO.User, ctx context.Context) {
+			func(r *test.MockIUserRepository, user dto.User, ctx context.Context) {
 				r.EXPECT().DoesPhoneExist(ctx, user.PhoneNumber).Return(appErrors.ErrUserExists)
 			},
 			func(r *test.MockIHasher, password string) {
@@ -70,7 +70,7 @@ func TestServiceRegister(t *testing.T) {
 		},
 		{
 			ctx,
-			DTO.User{
+			dto.User{
 				Name:        "Michael Scoffild",
 				Password:    "3608216",
 				Email:       "goodddman@gmail.com",
@@ -82,7 +82,7 @@ func TestServiceRegister(t *testing.T) {
 				PhoneNumber: "+375296509109",
 			},
 			2,
-			func(r *test.MockIUserRepository, user DTO.User, ctx context.Context) {
+			func(r *test.MockIUserRepository, user dto.User, ctx context.Context) {
 				r.EXPECT().DoesPhoneExist(ctx, user.PhoneNumber).Return(nil)
 			},
 			func(r *test.MockIHasher, password string) {
@@ -94,7 +94,7 @@ func TestServiceRegister(t *testing.T) {
 		},
 		{
 			ctx,
-			DTO.User{
+			dto.User{
 				Name:        "Drown",
 				Password:    "24578643",
 				Email:       "aceRainbow@mail.ru",
@@ -106,7 +106,7 @@ func TestServiceRegister(t *testing.T) {
 				PhoneNumber: "+375335478908",
 			},
 			-1,
-			func(r *test.MockIUserRepository, user DTO.User, ctx context.Context) {
+			func(r *test.MockIUserRepository, user dto.User, ctx context.Context) {
 				r.EXPECT().DoesPhoneExist(ctx, user.PhoneNumber).Return(nil)
 			},
 			func(r *test.MockIHasher, password string) {
@@ -118,7 +118,7 @@ func TestServiceRegister(t *testing.T) {
 		},
 		{
 			ctx,
-			DTO.User{
+			dto.User{
 				Name:        "Jacobs",
 				Password:    "21570243",
 				Email:       "lastexample@mail.ru",
@@ -130,7 +130,7 @@ func TestServiceRegister(t *testing.T) {
 				PhoneNumber: "",
 			},
 			-1,
-			func(r *test.MockIUserRepository, user DTO.User, ctx context.Context) {
+			func(r *test.MockIUserRepository, user dto.User, ctx context.Context) {
 				r.EXPECT().DoesPhoneExist(ctx, user.PhoneNumber).Return(nil)
 			},
 			func(r *test.MockIHasher, password string) {
@@ -173,7 +173,7 @@ func TestLogInUser(t *testing.T) {
 
 	testTable := []struct {
 		ctx                    context.Context
-		incomingData           DTO.LogInUserRequest
+		incomingData           dto.LogInUserRequest
 		gottenUser             model.User
 		expectedToken          string
 		getUserBehaviour       getUserBehaviour
@@ -182,7 +182,7 @@ func TestLogInUser(t *testing.T) {
 	}{
 		{
 			ctx,
-			DTO.LogInUserRequest{"+375447505544", ""},
+			dto.LogInUserRequest{PhoneNumber: "+375447505544", Password: ""},
 			model.User{
 				Name:        "Jacobs",
 				Password:    "",
@@ -202,7 +202,7 @@ func TestLogInUser(t *testing.T) {
 		},
 		{
 			ctx,
-			DTO.LogInUserRequest{"+375296509109", ""},
+			dto.LogInUserRequest{PhoneNumber: "+375296509109", Password: ""},
 			model.User{
 				Name:        "Peter",
 				Password:    "",
@@ -222,7 +222,7 @@ func TestLogInUser(t *testing.T) {
 		},
 		{
 			ctx,
-			DTO.LogInUserRequest{"+3733304109", ""},
+			dto.LogInUserRequest{PhoneNumber: "+3733304109", Password: ""},
 			model.User{
 				Name:        "Drake",
 				Password:    "",
@@ -242,7 +242,7 @@ func TestLogInUser(t *testing.T) {
 		},
 		{
 			ctx,
-			DTO.LogInUserRequest{"+3754404109", ""},
+			dto.LogInUserRequest{PhoneNumber: "+3754404109", Password: ""},
 			model.User{
 				Name:        "Jackson",
 				Password:    "",

@@ -1,4 +1,4 @@
-package DTO
+package dto
 
 type LogInUserRequest struct {
 	PhoneNumber string `json:"phoneNumber" binding:"required,e164"`

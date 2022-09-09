@@ -1,4 +1,4 @@
-package DTO
+package dto
 
 type User struct {
 	Name        string `json:"name" binding:"required,min=4,max=15"`

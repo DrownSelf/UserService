@@ -5,16 +5,16 @@ import (
 
 	"InnoTaxi/internal/app/auth"
 	"InnoTaxi/internal/app/repositories"
-	"InnoTaxi/internal/pkg/DTO"
 	"InnoTaxi/internal/pkg/configs"
+	"InnoTaxi/internal/pkg/dto"
 	"InnoTaxi/internal/pkg/model"
 )
 
 type IUserService interface {
-	RegisterUser(ctx context.Context, user DTO.User) (int, error)
-	LogInUser(ctx context.Context, request DTO.LogInUserRequest) (string, error)
+	RegisterUser(ctx context.Context, user dto.User) (int, error)
+	LogInUser(ctx context.Context, request dto.LogInUserRequest) (string, error)
 	DeleteUser(ctx context.Context, id int) error
-	UpdateUser(ctx context.Context, request DTO.ChangeUserRequest) error
+	UpdateUser(ctx context.Context, request dto.ChangeUserRequest) error
 	GetUserByPhone(ctx context.Context, phoneNumber string) (model.User, error)
 	LogOutUser(ctx context.Context, token string) error
 }
@@ -31,7 +31,7 @@ func NewUserService(userRepository repositories.IUserRepository, cacheRepository
 	return &UserService{userRepository: userRepository, cacheRepository: cacheRepository, tokenForger: tokenForger, hasher: hasher, config: config}
 }
 
-func (s *UserService) RegisterUser(ctx context.Context, user DTO.User) (int, error) {
+func (s *UserService) RegisterUser(ctx context.Context, user dto.User) (int, error) {
 	if err := s.userRepository.DoesPhoneExist(ctx, user.PhoneNumber); err != nil {
 		return -1, err
 	}
@@ -56,7 +56,7 @@ func (s *UserService) RegisterUser(ctx context.Context, user DTO.User) (int, err
 	return id, nil
 }
 
-func (s *UserService) LogInUser(ctx context.Context, request DTO.LogInUserRequest) (string, error) {
+func (s *UserService) LogInUser(ctx context.Context, request dto.LogInUserRequest) (string, error) {
 	user, err := s.userRepository.GetUserByPhone(ctx, request.PhoneNumber)
 	if err != nil {
 		return "", err
@@ -68,9 +68,9 @@ func (s *UserService) LogInUser(ctx context.Context, request DTO.LogInUserReques
 
 	token, err := s.tokenForger.Encode(
 		auth.TokenClaims{
-			user.Id,
-			user.Password,
-			user.Email,
+			Id:    user.Id,
+			Name:  user.Name,
+			Email: user.Email,
 		},
 		*s.config)
 	if err != nil {
@@ -88,7 +88,7 @@ func (s *UserService) DeleteUser(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *UserService) UpdateUser(ctx context.Context, request DTO.ChangeUserRequest) error {
+func (s *UserService) UpdateUser(ctx context.Context, request dto.ChangeUserRequest) error {
 	user, err := s.userRepository.GetUserByPhone(ctx, request.PhoneNumber)
 	if err != nil {
 		return err

@@ -4,7 +4,7 @@ import (
 	"context"
 	"reflect"
 
-	"InnoTaxi/internal/pkg/DTO"
+	"InnoTaxi/internal/pkg/dto"
 	"InnoTaxi/internal/pkg/model"
 
 	"github.com/golang/mock/gomock"
@@ -49,7 +49,7 @@ func (mr *MockIUserRepositoryMockRecorder) AddUser(ctx, user interface{}) *gomoc
 }
 
 // ChangeUser mocks base method.
-func (m *MockIUserRepository) UpdateUser(ctx context.Context, request DTO.ChangeUserRequest, id int) error {
+func (m *MockIUserRepository) UpdateUser(ctx context.Context, request dto.ChangeUserRequest, id int) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUser", ctx, request, id)
 	ret0, _ := ret[0].(error)
