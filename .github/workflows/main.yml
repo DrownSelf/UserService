@@ -29,10 +29,13 @@ jobs:
       run: go build -v ./...
 
     - name: Install golint
-      run: go install golang.org/x/lint/golint@latest
+      run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.49.0
 
     - name: Run golint
-      run: golint ./...
+      run: golangci-lint run
 
-    - name: Run tests
-      run: go test -race -vet=off ./...
+    - name: Transfer to test directory
+      run: cd test
+      
+    - name: Make tests
+      run: go test
