@@ -1,0 +1,4 @@
+.idea
+internal/pkg/configs/connection.env
+deployments/init-mongo.js
+cmd/main

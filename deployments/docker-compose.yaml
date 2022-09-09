@@ -1,0 +1,66 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:14.4
+    environment:
+      POSTGRES_PASSWORD: "150869"
+      POSTGRES_USER: "drown"
+      POSTGRES_DB: "userDb"
+    volumes:
+      - ../../volumes/postgre:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  mongo:
+    image: mongo:5.0
+    environment:
+      - MONGO_INITDB_DATABASE=logDb
+      - MONGO_INITDB_ROOT_USERNAME=drown
+      - MONGO_INITDB_ROOT_PASSWORD=150869
+    volumes:
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ../../volumes/mongo:/data/db
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning --requirepass 150869
+    volumes:
+      - ../../volumes/redis:/data
+
+  prometheus:
+    image: prom/prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    command: --web.enable-lifecycle  --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./prometheus:/etc/prometheus
+
+  grafana:
+    image: grafana/grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./grafana/config.monitoring
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+
+  webinnotaxi:
+    container_name: webinnotaxi
+    restart: on-failure
+    build:
+      dockerfile: ./deployments/Dockerfile
+      context: ../
+    env_file:
+      - ../internal/pkg/configs/connection.env
+    ports:
+      - "8080:8080"
