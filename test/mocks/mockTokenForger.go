@@ -3,9 +3,7 @@ package test
 import (
 	"reflect"
 
-	"InnoTaxi/internal/app/auth"
-	"InnoTaxi/internal/pkg/configs"
-
+	"github.com/DrownSelf/UserService/internal/auth"
 	"github.com/golang/mock/gomock"
 )
 
@@ -47,7 +45,7 @@ func (mr *MockTokenForgerMockRecorder) Decode(cipher interface{}) *gomock.Call {
 }
 
 // Encode mocks base method.
-func (m *MockTokenForger) Encode(tokenClaims auth.TokenClaims, config configs.Config) (string, error) {
+func (m *MockTokenForger) Encode(tokenClaims auth.TokenClaims, config configs.configs) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Encode", tokenClaims, config)
 	ret0, _ := ret[0].(string)

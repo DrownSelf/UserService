@@ -4,10 +4,10 @@ import (
 	"context"
 	"reflect"
 
-	"InnoTaxi/internal/pkg/dto"
-	"InnoTaxi/internal/pkg/model"
-
 	"github.com/golang/mock/gomock"
+
+	"github.com/DrownSelf/UserService/internal/entities"
+	"github.com/DrownSelf/UserService/internal/handlers"
 )
 
 // MockIUserRepository is a mock of IUserRepository interface.
@@ -34,7 +34,7 @@ func (m *MockIUserRepository) EXPECT() *MockIUserRepositoryMockRecorder {
 }
 
 // AddUser mocks base method.
-func (m *MockIUserRepository) AddUser(ctx context.Context, user model.User) (int, error) {
+func (m *MockIUserRepository) AddUser(ctx context.Context, user entities.User) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddUser", ctx, user)
 	ret0, _ := ret[0].(int)
@@ -49,7 +49,7 @@ func (mr *MockIUserRepositoryMockRecorder) AddUser(ctx, user interface{}) *gomoc
 }
 
 // ChangeUser mocks base method.
-func (m *MockIUserRepository) UpdateUser(ctx context.Context, request dto.ChangeUserRequest, id int) error {
+func (m *MockIUserRepository) UpdateUser(ctx context.Context, request handlers.ChangeUserRequest, id int) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUser", ctx, request, id)
 	ret0, _ := ret[0].(error)
@@ -91,10 +91,10 @@ func (mr *MockIUserRepositoryMockRecorder) DoesPhoneExist(ctx, phone interface{}
 }
 
 // GetAllUsers mocks base method.
-func (m *MockIUserRepository) GetAllUsers(ctx context.Context) ([]model.User, error) {
+func (m *MockIUserRepository) GetAllUsers(ctx context.Context) ([]entities.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllUsers", ctx)
-	ret0, _ := ret[0].([]model.User)
+	ret0, _ := ret[0].([]entities.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -106,10 +106,10 @@ func (mr *MockIUserRepositoryMockRecorder) GetAllUsers(ctx interface{}) *gomock.
 }
 
 // GetUserById mocks base method.
-func (m *MockIUserRepository) GetUserById(ctx context.Context, id int) (model.User, error) {
+func (m *MockIUserRepository) GetUserById(ctx context.Context, id int) (entities.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserById", ctx, id)
-	ret0, _ := ret[0].(model.User)
+	ret0, _ := ret[0].(entities.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -121,10 +121,10 @@ func (mr *MockIUserRepositoryMockRecorder) GetUserById(ctx, id interface{}) *gom
 }
 
 // GetUserByPhone mocks base method.
-func (m *MockIUserRepository) GetUserByPhone(ctx context.Context, phone string) (model.User, error) {
+func (m *MockIUserRepository) GetUserByPhone(ctx context.Context, phone string) (entities.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserByPhone", ctx, phone)
-	ret0, _ := ret[0].(model.User)
+	ret := m.ctrl.Call(m, "GetUser", ctx, phone)
+	ret0, _ := ret[0].(entities.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -132,5 +132,5 @@ func (m *MockIUserRepository) GetUserByPhone(ctx context.Context, phone string) 
 // GetUserByPhone indicates an expected call of GetUserByPhone.
 func (mr *MockIUserRepositoryMockRecorder) GetUserByPhone(ctx, phone interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByPhone", reflect.TypeOf((*MockIUserRepository)(nil).GetUserByPhone), ctx, phone)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockIUserRepository)(nil).GetUserByPhone), ctx, phone)
 }

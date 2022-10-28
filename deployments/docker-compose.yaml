@@ -3,6 +3,7 @@ version: '3.9'
 services:
   postgres:
     image: postgres:14.4
+    container_name: UserRepo
     environment:
       POSTGRES_PASSWORD: "150869"
       POSTGRES_USER: "drown"
@@ -14,6 +15,7 @@ services:
 
   mongo:
     image: mongo:5.0
+    container_name: LogRepo
     environment:
       - MONGO_INITDB_DATABASE=logDb
       - MONGO_INITDB_ROOT_USERNAME=drown
@@ -26,6 +28,7 @@ services:
 
   redis:
     image: redis:latest
+    container_name: CacheRepo
     restart: always
     ports:
       - "6379:6379"
@@ -35,6 +38,7 @@ services:
 
   prometheus:
     image: prom/prometheus
+    container_name: metricsCollector
     restart: always
     ports:
       - "9090:9090"
@@ -44,6 +48,7 @@ services:
 
   grafana:
     image: grafana/grafana
+    container_name: dashboard
     restart: always
     ports:
       - "3000:3000"
@@ -61,6 +66,6 @@ services:
       dockerfile: ./deployments/Dockerfile
       context: ../
     env_file:
-      - ../internal/pkg/configs/connection.env
+      - ../internal/config/connection.env
     ports:
       - "8080:8080"
