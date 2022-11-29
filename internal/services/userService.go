@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 
+	pb "github.com/DrownSelf/OrderService/pkg/grpc"
+
 	"github.com/DrownSelf/UserService/internal/auth"
 	configs "github.com/DrownSelf/UserService/internal/config"
 	"github.com/DrownSelf/UserService/internal/entities"
@@ -17,18 +19,21 @@ type IUserService interface {
 	GetUser(ctx context.Context, phoneNumber string) (entities.User, error)
 	LogOutUser(ctx context.Context, token string) error
 	UpdateUserRating(ctx context.Context, phoneNumber string, rating float64) error
+	MakeOrder(ctx context.Context, gottenUser entities.User, from string, to string, taxiType string) (*pb.UserRideResponse, error)
+	RateRideFromUser(ctx context.Context, rating int32, id string) error
 }
 
 type UserService struct {
 	userRepository  repositories.IUserRepository
 	cacheRepository repositories.ICacheRepository
+	orderClient     pb.OrderServiceClient
 	tokenForger     auth.TokenForger
 	hasher          auth.IHasher
 	config          *configs.Config
 }
 
-func NewUserService(userRepository repositories.IUserRepository, cacheRepository repositories.ICacheRepository, tokenForger auth.TokenForger, hasher auth.IHasher, config *configs.Config) *UserService {
-	return &UserService{userRepository: userRepository, cacheRepository: cacheRepository, tokenForger: tokenForger, hasher: hasher, config: config}
+func NewUserService(userRepository repositories.IUserRepository, client pb.OrderServiceClient, cacheRepository repositories.ICacheRepository, tokenForger auth.TokenForger, hasher auth.IHasher, config *configs.Config) *UserService {
+	return &UserService{userRepository: userRepository, orderClient: client, cacheRepository: cacheRepository, tokenForger: tokenForger, hasher: hasher, config: config}
 }
 
 func (s *UserService) RegisterUser(ctx context.Context, user entities.User) (int, error) {
@@ -139,6 +144,35 @@ func (s *UserService) UpdateUserRating(ctx context.Context, phoneNumber string, 
 	}
 
 	if err = s.userRepository.AppendRating(ctx, order.Id, rating); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *UserService) MakeOrder(ctx context.Context, gottenUser entities.User, from string, to string, taxiType string) (*pb.UserRideResponse, error) {
+	response, err := s.orderClient.MakeOrder(ctx, &pb.OrderTaxiRequest{
+		User: &pb.User{
+			PhoneNumber: gottenUser.PhoneNumber,
+			Email:       gottenUser.Email,
+			Name:        gottenUser.Name,
+		},
+		From:     from,
+		To:       to,
+		TaxiType: taxiType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+func (s *UserService) RateRideFromUser(ctx context.Context, rating int32, id string) error {
+	_, err := s.orderClient.RateRideFromUser(ctx, &pb.RateDriverFromUser{
+		Rating:  rating,
+		OrderId: id,
+	})
+
+	if err != nil {
 		return err
 	}
 	return nil

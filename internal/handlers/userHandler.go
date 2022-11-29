@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 
-	pb "github.com/DrownSelf/OrderService/pkg/grpc"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
@@ -19,11 +18,10 @@ import (
 
 type Handler struct {
 	userService services.IUserService
-	orderClient pb.OrderServiceClient
 }
 
-func New(service services.IUserService, client pb.OrderServiceClient) Handler {
-	return Handler{userService: service, orderClient: client}
+func NewHandler(service services.IUserService) Handler {
+	return Handler{userService: service}
 }
 
 func (h *Handler) Register(ctx *gin.Context) {
@@ -147,16 +145,7 @@ func (h *Handler) OrderTaxi(ctx *gin.Context) {
 		return
 	}
 
-	response, err := h.orderClient.MakeOrder(ctx, &pb.OrderTaxiRequest{
-		User: &pb.User{
-			PhoneNumber: gottenUser.PhoneNumber,
-			Email:       gottenUser.Email,
-			Name:        gottenUser.Name,
-		},
-		From:     orderRequest.From,
-		To:       orderRequest.To,
-		TaxiType: orderRequest.TaxiType,
-	})
+	response, err := h.userService.MakeOrder(ctx, gottenUser, orderRequest.From, orderRequest.To, orderRequest.TaxiType)
 	if err != nil {
 		_ = ctx.Error(err)
 		return
@@ -193,10 +182,7 @@ func (h *Handler) RateRide(ctx *gin.Context) {
 		return
 	}
 
-	_, err := h.orderClient.RateRideFromUser(ctx, &pb.RateDriverFromUser{
-		Rating:  rideRequest.Rating,
-		OrderId: rideRequest.Id,
-	})
+	err := h.userService.RateRideFromUser(ctx, rideRequest.Rating, rideRequest.Id)
 	if err != nil {
 		_ = ctx.Error(err)
 		return

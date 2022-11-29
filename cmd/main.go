@@ -15,6 +15,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	_ "github.com/DrownSelf/UserService/cmd/docs"
 	"github.com/DrownSelf/UserService/internal/auth"
@@ -44,14 +45,15 @@ func main() {
 	router := gin.New()
 	metricsRepo := repositories.NewMetricsRepo(router)
 	tokenForger := auth.NewJwt(connectionConfig.Secret)
-	service := services.NewUserService(userRepo, cacheRepo, tokenForger, &auth.Hasher{}, connectionConfig)
-	grpcConnection, err := grpc.Dial(connectionConfig.GrpcClient, grpc.WithInsecure(), grpc.WithBlock())
-	client := pb.NewOrderServiceClient(grpcConnection)
+
+	conn, err := grpc.Dial(connectionConfig.GrpcClient, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	client := pb.NewOrderServiceClient(conn)
+	service := services.NewUserService(userRepo, client, cacheRepo, tokenForger, &auth.Hasher{}, connectionConfig)
 	if err != nil {
 		log.Fatalf("error during setup GRPC: %v", err)
 	}
 
-	handler := handlers.New(service, client)
+	handler := handlers.NewHandler(service)
 	handler.InitRoutes(router, handlers.MiddlewareDependencies{
 		LogRepository:    logRepo,
 		Forger:           tokenForger,
