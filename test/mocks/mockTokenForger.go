@@ -3,8 +3,10 @@ package test
 import (
 	"reflect"
 
-	"github.com/DrownSelf/UserService/internal/auth"
 	"github.com/golang/mock/gomock"
+
+	"github.com/DrownSelf/UserService/internal/auth"
+	configs "github.com/DrownSelf/UserService/internal/config"
 )
 
 // MockTokenForger is a mock of TokenForger interface.
@@ -31,11 +33,12 @@ func (m *MockTokenForger) EXPECT() *MockTokenForgerMockRecorder {
 }
 
 // Decode mocks base method.
-func (m *MockTokenForger) Decode(cipher string) error {
+func (m *MockTokenForger) Decode(cipher string) (auth.TokenClaims, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Decode", cipher)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(auth.TokenClaims)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Decode indicates an expected call of Decode.
@@ -45,7 +48,7 @@ func (mr *MockTokenForgerMockRecorder) Decode(cipher interface{}) *gomock.Call {
 }
 
 // Encode mocks base method.
-func (m *MockTokenForger) Encode(tokenClaims auth.TokenClaims, config configs.configs) (string, error) {
+func (m *MockTokenForger) Encode(tokenClaims auth.TokenClaims, config configs.Config) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Encode", tokenClaims, config)
 	ret0, _ := ret[0].(string)
