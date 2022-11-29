@@ -15,6 +15,15 @@ jobs:
         with:
           go-version: 1.18
 
+      - uses: extractions/netrc@v1
+        with:
+          machine: github.com
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+
+      - name: Set envar
+        run: export GOPRIVATE=github.com/DrownSelf
+
       - name: Verify dependencies
         run: go mod verify
 
