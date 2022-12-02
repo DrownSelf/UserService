@@ -15,6 +15,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/DrownSelf/UserService/internal/api"
+	v1 "github.com/DrownSelf/UserService/internal/api/v1"
 	"github.com/DrownSelf/UserService/internal/auth"
 	config "github.com/DrownSelf/UserService/internal/config"
 	"github.com/DrownSelf/UserService/internal/handlers"
@@ -38,25 +40,22 @@ func main() {
 		log.Fatalf("error during connect DB: %v", err)
 	}
 
-	cacheRepo := repositories.NewCacheRepo(*connectionConfig)
 	router := gin.New()
+	cacheRepo := repositories.NewCacheRepo(*connectionConfig)
 	metricsRepo := repositories.NewMetricsRepo(router)
-	tokenForger := auth.NewJwt(connectionConfig.Secret)
+	jwt := auth.NewJwt(connectionConfig.Secret)
 
 	conn, err := grpc.Dial(connectionConfig.GrpcClient, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("error during setup GRPC: %v", err)
 	}
 	client := pb.NewOrderServiceClient(conn)
-	service := services.NewUserService(userRepo, client, cacheRepo, tokenForger, &auth.Hasher{}, connectionConfig)
-
+	service := services.NewUserService(userRepo, client, cacheRepo, jwt, &auth.Hasher{}, connectionConfig)
 	handler := handlers.NewHandler(service)
-	handler.InitRoutes(router, handlers.MiddlewareDependencies{
-		LogRepository:    logRepo,
-		Forger:           tokenForger,
-		CacheRepository:  cacheRepo,
-		MetricRepository: metricsRepo,
-	})
+
+	v1 := v1.NewApiV1(&handler, jwt, cacheRepo)
+	api := api.NewApiGroup(&handler, v1, logRepo, metricsRepo)
+	api.InitRouterGroups(router)
 
 	srv := &http.Server{
 		Addr:    ":" + connectionConfig.ServerPort,

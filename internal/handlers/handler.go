@@ -3,16 +3,11 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/DrownSelf/UserService/internal/appErrors"
 	"github.com/DrownSelf/UserService/internal/auth"
 	"github.com/DrownSelf/UserService/internal/entities"
-	"github.com/DrownSelf/UserService/internal/middlewares"
-	"github.com/DrownSelf/UserService/internal/repositories"
 	"github.com/DrownSelf/UserService/internal/services"
 )
 
@@ -188,43 +183,4 @@ func (h *Handler) RateRide(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, "Rating added successfully")
-}
-
-type MiddlewareDependencies struct {
-	LogRepository    repositories.ILogRepo
-	Forger           auth.TokenAuth
-	CacheRepository  repositories.ICacheRepository
-	MetricRepository *repositories.PrometheusRepository
-}
-
-func (h *Handler) InitRoutes(router *gin.Engine, dependencies MiddlewareDependencies) {
-	router.Use(cors.Default())
-	router.Use(gin.Recovery(), middlewares.Logger(dependencies.LogRepository))
-	router.Use(appErrors.HandleErr)
-	router.Use(middlewares.ObserveStats(dependencies.MetricRepository))
-
-	v1 := router.Group("/api/v1")
-	{
-		orderGroup := v1.Group("/order")
-		{
-			orderGroup.POST("/rateUser", h.RateUserFromOrder)
-		}
-		userGroup := v1.Group("/user")
-		{
-			userGroup.POST("/register", h.Register)
-			userGroup.POST("/login", h.LogIn)
-			authGroup := userGroup.Group("", middlewares.TokenDecoderMiddleware(dependencies.Forger, dependencies.CacheRepository))
-			{
-				authGroup.POST("/orderTaxi", h.OrderTaxi)
-				authGroup.POST("/rateOrder", h.RateRide)
-				authGroup.GET("/logout", h.LogOut)
-				authGroup.GET("", h.GetUser)
-				authGroup.PUT("", h.UpdateUser)
-				authGroup.DELETE("", h.DeleteUser)
-			}
-		}
-	}
-	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
-	pprof.Register(router)
-	pprof.RouteRegister(v1, "pprof")
 }

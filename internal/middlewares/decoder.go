@@ -30,6 +30,7 @@ func TokenDecoderMiddleware(forger auth.TokenAuth, repository repositories.ICach
 			}
 			log.Printf("Internal server error: %s", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, "")
+			return
 		}
 		ctx.Set("user", user)
 		ctx.Next()
