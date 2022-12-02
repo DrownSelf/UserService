@@ -12,12 +12,9 @@ import (
 	pb "github.com/DrownSelf/OrderService/pkg/grpc"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	_ "github.com/DrownSelf/UserService/cmd/docs"
 	"github.com/DrownSelf/UserService/internal/auth"
 	config "github.com/DrownSelf/UserService/internal/config"
 	"github.com/DrownSelf/UserService/internal/handlers"
@@ -47,11 +44,11 @@ func main() {
 	tokenForger := auth.NewJwt(connectionConfig.Secret)
 
 	conn, err := grpc.Dial(connectionConfig.GrpcClient, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
-	client := pb.NewOrderServiceClient(conn)
-	service := services.NewUserService(userRepo, client, cacheRepo, tokenForger, &auth.Hasher{}, connectionConfig)
 	if err != nil {
 		log.Fatalf("error during setup GRPC: %v", err)
 	}
+	client := pb.NewOrderServiceClient(conn)
+	service := services.NewUserService(userRepo, client, cacheRepo, tokenForger, &auth.Hasher{}, connectionConfig)
 
 	handler := handlers.NewHandler(service)
 	handler.InitRoutes(router, handlers.MiddlewareDependencies{
@@ -60,7 +57,7 @@ func main() {
 		CacheRepository:  cacheRepo,
 		MetricRepository: metricsRepo,
 	})
-	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	srv := &http.Server{
 		Addr:    ":" + connectionConfig.ServerPort,
 		Handler: router,

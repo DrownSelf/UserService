@@ -192,7 +192,7 @@ func (h *Handler) RateRide(ctx *gin.Context) {
 
 type MiddlewareDependencies struct {
 	LogRepository    repositories.ILogRepo
-	Forger           auth.TokenForger
+	Forger           auth.TokenAuth
 	CacheRepository  repositories.ICacheRepository
 	MetricRepository *repositories.PrometheusRepository
 }

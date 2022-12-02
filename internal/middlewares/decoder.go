@@ -13,7 +13,7 @@ import (
 	"github.com/DrownSelf/UserService/internal/repositories"
 )
 
-func TokenDecoderMiddleware(forger auth.TokenForger, repository repositories.ICacheRepository) gin.HandlerFunc {
+func TokenDecoderMiddleware(forger auth.TokenAuth, repository repositories.ICacheRepository) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		token := ctx.GetHeader("Authorization")
 		if repository.DoesInvalidTokenExist(ctx, token) {

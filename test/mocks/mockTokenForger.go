@@ -9,7 +9,7 @@ import (
 	configs "github.com/DrownSelf/UserService/internal/config"
 )
 
-// MockTokenForger is a mock of TokenForger interface.
+// MockTokenForger is a mock of TokenAuth interface.
 type MockTokenForger struct {
 	ctrl     *gomock.Controller
 	recorder *MockTokenForgerMockRecorder

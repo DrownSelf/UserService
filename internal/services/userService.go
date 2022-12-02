@@ -27,12 +27,12 @@ type UserService struct {
 	userRepository  repositories.IUserRepository
 	cacheRepository repositories.ICacheRepository
 	orderClient     pb.OrderServiceClient
-	tokenForger     auth.TokenForger
+	tokenForger     auth.TokenAuth
 	hasher          auth.IHasher
 	config          *configs.Config
 }
 
-func NewUserService(userRepository repositories.IUserRepository, client pb.OrderServiceClient, cacheRepository repositories.ICacheRepository, tokenForger auth.TokenForger, hasher auth.IHasher, config *configs.Config) *UserService {
+func NewUserService(userRepository repositories.IUserRepository, client pb.OrderServiceClient, cacheRepository repositories.ICacheRepository, tokenForger auth.TokenAuth, hasher auth.IHasher, config *configs.Config) *UserService {
 	return &UserService{userRepository: userRepository, orderClient: client, cacheRepository: cacheRepository, tokenForger: tokenForger, hasher: hasher, config: config}
 }
 
