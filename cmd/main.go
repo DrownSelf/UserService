@@ -29,7 +29,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error during reading connectionConfig: %v", err)
 	}
-
+	
 	userRepo, err := repositories.NewUserRepo(connectionConfig)
 	if err != nil {
 		log.Fatalf("error during connect DB: %v", err)

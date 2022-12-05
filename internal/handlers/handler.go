@@ -61,7 +61,13 @@ func (h *Handler) UpdateUser(ctx *gin.Context) {
 		_ = ctx.Error(appErrors.ErrInvalidToken)
 		return
 	}
-	phoneNumber := user.(auth.TokenClaims).PhoneNumber
+
+	claims, ok := user.(auth.TokenClaims)
+	if !ok {
+		_ = ctx.Error(appErrors.ErrInvalidToken)
+		return
+	}
+	phoneNumber := claims.PhoneNumber
 
 	if err := h.userService.UpdateUser(ctx, entities.User{
 		Name:        changedUser.NewName,
@@ -80,7 +86,13 @@ func (h *Handler) DeleteUser(ctx *gin.Context) {
 		_ = ctx.Error(appErrors.ErrInvalidToken)
 		return
 	}
-	id := user.(auth.TokenClaims).Id
+
+	claims, ok := user.(auth.TokenClaims)
+	if !ok {
+		_ = ctx.Error(appErrors.ErrInvalidToken)
+		return
+	}
+	id := claims.Id
 
 	if err := h.userService.DeleteUser(ctx, id); err != nil {
 		_ = ctx.Error(err)
@@ -95,7 +107,13 @@ func (h *Handler) GetUser(ctx *gin.Context) {
 		_ = ctx.Error(appErrors.ErrInvalidToken)
 		return
 	}
-	phoneNumber := user.(auth.TokenClaims).PhoneNumber
+
+	claims, ok := user.(auth.TokenClaims)
+	if !ok {
+		_ = ctx.Error(appErrors.ErrInvalidToken)
+		return
+	}
+	phoneNumber := claims.PhoneNumber
 
 	response, err := h.userService.GetUser(ctx, phoneNumber)
 	if err != nil {
@@ -132,7 +150,13 @@ func (h *Handler) OrderTaxi(ctx *gin.Context) {
 		_ = ctx.Error(appErrors.ErrInvalidToken)
 		return
 	}
-	phoneNumber := user.(auth.TokenClaims).PhoneNumber
+
+	claims, ok := user.(auth.TokenClaims)
+	if !ok {
+		_ = ctx.Error(appErrors.ErrInvalidToken)
+		return
+	}
+	phoneNumber := claims.PhoneNumber
 
 	gottenUser, err := h.userService.GetUser(ctx, phoneNumber)
 	if err != nil {

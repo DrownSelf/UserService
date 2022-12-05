@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"log"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -37,9 +38,7 @@ func NewUserRepo(config *configs.Config) (*UserRepository, error) {
 	}
 
 	if err = migrations.Up(db); err != nil {
-		if err := db.Close(); err != nil {
-			return nil, err
-		}
+		log.Println(db.Close())
 		return nil, err
 	}
 
