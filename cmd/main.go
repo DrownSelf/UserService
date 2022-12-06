@@ -9,51 +9,56 @@ import (
 	"syscall"
 	"time"
 
+	pb "github.com/DrownSelf/OrderService/pkg/grpc"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
-	_ "InnoTaxi/cmd/docs"
-	"InnoTaxi/internal/app/auth"
-	"InnoTaxi/internal/app/handlers"
-	"InnoTaxi/internal/app/repositories"
-	"InnoTaxi/internal/app/services"
-	"InnoTaxi/internal/pkg/configs"
+	"github.com/DrownSelf/UserService/internal/api"
+	v1 "github.com/DrownSelf/UserService/internal/api/v1"
+	"github.com/DrownSelf/UserService/internal/auth"
+	config "github.com/DrownSelf/UserService/internal/config"
+	"github.com/DrownSelf/UserService/internal/handlers"
+	"github.com/DrownSelf/UserService/internal/repositories"
+	"github.com/DrownSelf/UserService/internal/services"
 )
 
 func main() {
-	config, err := configs.LoadConnectionConfig()
+	connectionConfig, err := config.LoadConnectionConfig()
 	if err != nil {
-		log.Fatalf("error during reading config: %v", err)
+		log.Fatalf("error during reading connectionConfig: %v", err)
 	}
-
-	userRepo, err := repositories.NewUserRepo(config)
-	if err != nil {
-		log.Fatalf("error during connect DB: %v", err)
-	}
-
-	logRepo, err := repositories.NewLogRepo(context.Background(), config)
+	
+	userRepo, err := repositories.NewUserRepo(connectionConfig)
 	if err != nil {
 		log.Fatalf("error during connect DB: %v", err)
 	}
 
-	cacheRepo := repositories.NewCacheRepo(*config)
+	logRepo, err := repositories.NewLogRepo(context.Background(), connectionConfig)
+	if err != nil {
+		log.Fatalf("error during connect DB: %v", err)
+	}
 
 	router := gin.New()
+	cacheRepo := repositories.NewCacheRepo(*connectionConfig)
 	metricsRepo := repositories.NewMetricsRepo(router)
-	tokenForger := auth.NewJwt(config.Secret)
-	service := services.NewUserService(userRepo, cacheRepo, tokenForger, &auth.Hasher{}, config)
-	handler := handlers.New(service)
-	handler.InitRoutes(router, handlers.MiddlewareDependencies{
-		LogRepository:    logRepo,
-		Forger:           tokenForger,
-		CacheRepository:  cacheRepo,
-		MetricRepository: metricsRepo,
-	})
-	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	jwt := auth.NewJwt(connectionConfig.Secret)
+
+	conn, err := grpc.Dial(connectionConfig.GrpcClient, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("error during setup GRPC: %v", err)
+	}
+	client := pb.NewOrderServiceClient(conn)
+	service := services.NewUserService(userRepo, client, cacheRepo, jwt, &auth.Hasher{}, connectionConfig)
+	handler := handlers.NewHandler(service)
+
+	v1 := v1.NewApiV1(&handler, jwt, cacheRepo)
+	api := api.NewApiGroup(&handler, v1, logRepo, metricsRepo)
+	api.InitRouterGroups(router)
+
 	srv := &http.Server{
-		Addr:    ":" + config.ServerPort,
+		Addr:    ":" + connectionConfig.ServerPort,
 		Handler: router,
 	}
 	go func() {

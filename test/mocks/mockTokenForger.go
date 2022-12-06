@@ -3,13 +3,13 @@ package test
 import (
 	"reflect"
 
-	"InnoTaxi/internal/app/auth"
-	"InnoTaxi/internal/pkg/configs"
-
 	"github.com/golang/mock/gomock"
+
+	"github.com/DrownSelf/UserService/internal/auth"
+	configs "github.com/DrownSelf/UserService/internal/config"
 )
 
-// MockTokenForger is a mock of TokenForger interface.
+// MockTokenForger is a mock of TokenAuth interface.
 type MockTokenForger struct {
 	ctrl     *gomock.Controller
 	recorder *MockTokenForgerMockRecorder
@@ -33,11 +33,12 @@ func (m *MockTokenForger) EXPECT() *MockTokenForgerMockRecorder {
 }
 
 // Decode mocks base method.
-func (m *MockTokenForger) Decode(cipher string) error {
+func (m *MockTokenForger) Decode(cipher string) (auth.TokenClaims, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Decode", cipher)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(auth.TokenClaims)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Decode indicates an expected call of Decode.
