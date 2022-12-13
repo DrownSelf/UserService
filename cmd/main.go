@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/DrownSelf/AnalyticsService/pkg/provider"
 	pb "github.com/DrownSelf/OrderService/pkg/grpc"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -29,7 +30,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error during reading connectionConfig: %v", err)
 	}
-	
+
 	userRepo, err := repositories.NewUserRepo(connectionConfig)
 	if err != nil {
 		log.Fatalf("error during connect DB: %v", err)
@@ -49,8 +50,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("error during setup GRPC: %v", err)
 	}
+
 	client := pb.NewOrderServiceClient(conn)
-	service := services.NewUserService(userRepo, client, cacheRepo, jwt, &auth.Hasher{}, connectionConfig)
+	producer, err := provider.NewProducer(connectionConfig.KafkaTopic, connectionConfig.KafkaConnection)
+	if err != nil {
+		log.Fatalf("error during connect to kafka: %v", err)
+	}
+
+	service := services.NewUserService(userRepo, client, cacheRepo, jwt, &auth.Hasher{}, connectionConfig, producer)
 	handler := handlers.NewHandler(service)
 
 	v1 := v1.NewApiV1(&handler, jwt, cacheRepo)

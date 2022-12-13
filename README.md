@@ -1,6 +1,7 @@
 # User Service
 ***
-The service provides functionality to work with user requests.
+The service provides functionality to work with user requests. It works with order(by grpc) 
+and analytics(by kafka) service. All deployed in docker.
 
 # External requirements
 ***
@@ -15,6 +16,8 @@ The service provides functionality to work with user requests.
     go-redis/redis
     go-redis/cache
     swaggo/swag
+    github.com/DrownSelf/OrderService
+    github.com/DrownSelf/AnalyticsService
 
     
 
@@ -32,3 +35,6 @@ The service could be configured by providing environment variables.
 | REDIS_HOST         | Host for redis               | redis:6379                                                          |
 | REDIS_PASSWORD     | Password for redis           | password                                                            |
 | EXPTIME            | Expiration time of JWT Token | 1h                                                                  |
+| GRPC_CLIENT        | Connection to grpc server    | 127.0.0.1:8082                                                      |
+| KAFKA_TOPIC        | Topic for kafka              | allnamewhichyouwant                                                 |
+| KAFKA_CONNECTION   | Connection for kafka         | localhost:9092                                                      |

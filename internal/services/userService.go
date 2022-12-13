@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	"time"
 
+	"github.com/DrownSelf/AnalyticsService/pkg/provider"
 	pb "github.com/DrownSelf/OrderService/pkg/grpc"
 
 	"github.com/DrownSelf/UserService/internal/auth"
@@ -27,13 +29,14 @@ type UserService struct {
 	userRepository  repositories.IUserRepository
 	cacheRepository repositories.ICacheRepository
 	orderClient     pb.OrderServiceClient
+	producer        *provider.Producer
 	tokenForger     auth.TokenAuth
 	hasher          auth.IHasher
 	config          *configs.Config
 }
 
-func NewUserService(userRepository repositories.IUserRepository, client pb.OrderServiceClient, cacheRepository repositories.ICacheRepository, tokenForger auth.TokenAuth, hasher auth.IHasher, config *configs.Config) *UserService {
-	return &UserService{userRepository: userRepository, orderClient: client, cacheRepository: cacheRepository, tokenForger: tokenForger, hasher: hasher, config: config}
+func NewUserService(userRepository repositories.IUserRepository, client pb.OrderServiceClient, cacheRepository repositories.ICacheRepository, tokenForger auth.TokenAuth, hasher auth.IHasher, config *configs.Config, producer *provider.Producer) *UserService {
+	return &UserService{userRepository: userRepository, orderClient: client, cacheRepository: cacheRepository, tokenForger: tokenForger, hasher: hasher, config: config, producer: producer}
 }
 
 func (s *UserService) RegisterUser(ctx context.Context, user entities.User) (int, error) {
@@ -63,6 +66,11 @@ func (s *UserService) RegisterUser(ctx context.Context, user entities.User) (int
 		return -1, err
 	}
 
+	registrationTime, err := time.Now().MarshalBinary()
+	if err != nil {
+		return -1, err
+	}
+	s.producer.Produce([]byte("registrationDate"), registrationTime)
 	return id, nil
 }
 

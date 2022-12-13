@@ -16,6 +16,8 @@ type Config struct {
 	RedisPassword    string
 	RedisHost        string
 	GrpcClient       string
+	KafkaConnection  string
+	KafkaTopic       string
 }
 
 func LoadConnectionConfig() (*Config, error) {
@@ -26,6 +28,8 @@ func LoadConnectionConfig() (*Config, error) {
 	}
 
 	config.PgSource = os.Getenv("PG_SOURCE")
+	config.KafkaConnection = os.Getenv("KAFKA_CONNECTION")
+	config.KafkaTopic = os.Getenv("KAFKA_TOPIC")
 	config.MongoDbConnSting = os.Getenv("MONGODB_CONNSTRING")
 	config.ServerPort = os.Getenv("SERVERPORT")
 	config.Secret = os.Getenv("SECRET")
